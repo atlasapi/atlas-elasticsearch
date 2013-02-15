@@ -1,0 +1,23 @@
+{
+    "minusone": "-1",
+    "zero": "one",
+    "one": [{
+        "first": "one-first-one", 
+        "second": "one-second-one"
+    }, {
+        "first": "one-first-two",
+        "second": "one-second-two"
+    },{
+        "first": "one-first-three",
+        "second": "one-second-three",
+        "two": [{
+            "first": "one-two-first-one",
+            "second": "one-two-second-one",
+            "three": [{
+                "first": "one-two-three-first-one", 
+                "second": "one-two-three-second-one",
+                "third": "one-two-three-third-one"
+            }]
+        }]
+    }]
+}     

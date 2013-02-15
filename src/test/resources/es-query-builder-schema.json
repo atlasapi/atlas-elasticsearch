@@ -1,0 +1,57 @@
+{
+    "test" : {
+        "properties" : {
+            "minusone" : {
+                "type" : "string",
+                "index" : "not_analyzed"
+            },
+            "zero" : {
+                    "type" : "string",
+                    "index" : "not_analyzed"
+            },
+            "one" : {
+                "type" : "nested",
+                "properties" : {
+                    "first" : {
+                        "type" : "string",
+                        "index" : "not_analyzed"
+                    },
+                    "second" : {
+                        "type" : "string",
+                        "index" : "not_analyzed"
+                    },
+                    "two" : {
+                        "type" : "nested",
+                        "properties" : {
+                            "first" : {
+                                "type" : "string",
+                                "index" : "not_analyzed"
+                            },
+                            "second" : {
+                                "type" : "string",
+                                "index" : "not_analyzed"
+                            },
+                            "three" : {
+                                "type" : "nested",
+                                "properties" : {
+                                    "first" : {
+                                        "type" : "string",
+                                        "index" : "not_analyzed"
+                                    },
+                                    "second" : {
+                                        "type" : "string",
+                                        "index" : "not_analyzed"
+                                    },
+                                    "third" : {
+                                        "type" : "string",
+                                        "index" : "not_analyzed"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
