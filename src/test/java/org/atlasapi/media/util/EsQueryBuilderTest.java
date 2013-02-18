@@ -11,7 +11,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.atlasapi.content.criteria.AttributeQuery;
-import org.atlasapi.content.criteria.NodeSet;
+import org.atlasapi.content.criteria.AttributeQuerySet;
 import org.atlasapi.content.criteria.attribute.Attribute;
 import org.atlasapi.content.criteria.attribute.StringValuedAttribute;
 import org.atlasapi.content.criteria.operator.Operators;
@@ -108,7 +108,7 @@ public class EsQueryBuilderTest {
 
     @Test
     public void testSingleTopLevelQuery() throws Exception {
-        NodeSet queries = new NodeSet(ImmutableList.<AttributeQuery<?>>of(
+        AttributeQuerySet queries = new AttributeQuerySet(ImmutableList.<AttributeQuery<?>>of(
             createQuery(ZERO, "one")
         ));
         SearchHits hits = queryHits(queries);
@@ -117,7 +117,7 @@ public class EsQueryBuilderTest {
     
     @Test
     public void testTwoTopLevelQuery() throws Exception {
-        NodeSet queries = new NodeSet(ImmutableList.<AttributeQuery<?>>of(
+        AttributeQuerySet queries = new AttributeQuerySet(ImmutableList.<AttributeQuery<?>>of(
             createQuery(ZERO, "one"),
             createQuery(MINUS_ONE, "-1")
         ));
@@ -127,7 +127,7 @@ public class EsQueryBuilderTest {
 
     @Test
     public void testSingleNestedQuery() throws Exception {
-        NodeSet queries = new NodeSet(ImmutableList.<AttributeQuery<?>>of(
+        AttributeQuerySet queries = new AttributeQuerySet(ImmutableList.<AttributeQuery<?>>of(
             createQuery(ONE_FIRST, "one-first-one")
         ));
         SearchHits hits = queryHits(queries);
@@ -136,7 +136,7 @@ public class EsQueryBuilderTest {
     
     @Test
     public void testTopAndNestedQuery() throws Exception {
-        NodeSet queries = new NodeSet(ImmutableList.<AttributeQuery<?>>of(
+        AttributeQuerySet queries = new AttributeQuerySet(ImmutableList.<AttributeQuery<?>>of(
             createQuery(ZERO, "one"),
             createQuery(ONE_FIRST, "one-first-one")
         ));
@@ -146,7 +146,7 @@ public class EsQueryBuilderTest {
 
     @Test
     public void testTwoNestedQuery() throws Exception {
-        NodeSet queries = new NodeSet(ImmutableList.<AttributeQuery<?>>of(
+        AttributeQuerySet queries = new AttributeQuerySet(ImmutableList.<AttributeQuery<?>>of(
             createQuery(ONE_FIRST, "one-first-one"),
             createQuery(ONE_SECOND, "one-second-one")
         ));
@@ -156,7 +156,7 @@ public class EsQueryBuilderTest {
 
     @Test
     public void testDoublyNestedQuery() throws Exception {
-        NodeSet queries = new NodeSet(ImmutableList.<AttributeQuery<?>>of(
+        AttributeQuerySet queries = new AttributeQuerySet(ImmutableList.<AttributeQuery<?>>of(
             createQuery(ONE_TWO_FIRST, "one-two-first-one")
         ));
         SearchHits hits = queryHits(queries);
@@ -165,7 +165,7 @@ public class EsQueryBuilderTest {
 
     @Test
     public void testTriplyNestedQuery() throws Exception {
-        NodeSet queries = new NodeSet(ImmutableList.<AttributeQuery<?>>of(
+        AttributeQuerySet queries = new AttributeQuerySet(ImmutableList.<AttributeQuery<?>>of(
             createQuery(ONE_TWO_THREE_FIRST, "one-two-three-first-one")
         ));
         SearchHits hits = queryHits(queries);
@@ -174,7 +174,7 @@ public class EsQueryBuilderTest {
 
     @Test
     public void testTriplyNestedWithTopQuery() throws Exception {
-        NodeSet queries = new NodeSet(ImmutableList.<AttributeQuery<?>>of(
+        AttributeQuerySet queries = new AttributeQuerySet(ImmutableList.<AttributeQuery<?>>of(
             createQuery(ZERO, "one"),
             createQuery(ONE_TWO_THREE_FIRST, "one-two-three-first-one")
         ));
@@ -196,7 +196,7 @@ public class EsQueryBuilderTest {
             createQuery(ONE_TWO_THREE_THIRD, "one-two-three-third-one")
         );
         for (Set<AttributeQuery<?>> queries : Iterables.skip(Sets.powerSet(attrQueries),1)) {
-            NodeSet set = new NodeSet(queries);
+            AttributeQuerySet set = new AttributeQuerySet(queries);
             SearchHits hits = queryHits(set);
             assertThat(Iterables.getOnlyElement(hits).id(), is("one"));
         }
@@ -206,7 +206,7 @@ public class EsQueryBuilderTest {
         return attr.createQuery(Operators.EQUALS, ImmutableList.copyOf(vals));
     }
     
-    private SearchHits queryHits(NodeSet query) throws Exception {
+    private SearchHits queryHits(AttributeQuerySet query) throws Exception {
         return esClient.client().prepareSearch()
             .setQuery(builder.buildQuery(query))
             .execute().get().getHits();

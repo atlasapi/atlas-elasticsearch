@@ -6,7 +6,7 @@ import static org.atlasapi.media.topic.EsTopic.SOURCE;
 
 import java.util.concurrent.TimeUnit;
 
-import org.atlasapi.content.criteria.NodeSet;
+import org.atlasapi.content.criteria.AttributeQuerySet;
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.util.EsAlias;
@@ -106,7 +106,7 @@ public class EsTopicIndex extends AbstractIdleService implements TopicIndex {
     }
     
     @Override
-    public ListenableFuture<FluentIterable<Id>> query(NodeSet query, 
+    public ListenableFuture<FluentIterable<Id>> query(AttributeQuerySet query, 
         Iterable<Publisher> publishers, Selection selection) {
         SettableFuture<SearchResponse> response = SettableFuture.create();
         esClient.client()  
@@ -122,6 +122,11 @@ public class EsTopicIndex extends AbstractIdleService implements TopicIndex {
         return Futures.transform(response, new Function<SearchResponse, FluentIterable<Id>>() {
             @Override
             public FluentIterable<Id> apply(SearchResponse input) {
+                /*
+                 * TODO: if 
+                 *  selection.offset + selection.limit < totalHits
+                 * then we have more: return for use with response. 
+                 */
                 return FluentIterable.from(input.getHits()).transform(new Function<SearchHit, Id>() {
                     @Override
                     public Id apply(SearchHit hit) {

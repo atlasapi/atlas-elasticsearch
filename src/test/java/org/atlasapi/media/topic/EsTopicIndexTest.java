@@ -19,7 +19,7 @@ import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
-import org.atlasapi.content.criteria.NodeSet;
+import org.atlasapi.content.criteria.AttributeQuerySet;
 import org.atlasapi.content.criteria.attribute.Attributes;
 import org.atlasapi.content.criteria.operator.Operators;
 import org.atlasapi.media.common.Id;
@@ -96,7 +96,7 @@ public class EsTopicIndexTest {
         index.index(topic);
         Thread.sleep(1000);
         
-        NodeSet query = new NodeSet(ImmutableList.of(
+        AttributeQuerySet query = new AttributeQuerySet(ImmutableList.of(
             Attributes.ID.createQuery(Operators.EQUALS, ImmutableList.of(topic.getId()))
         ));
         Iterable<Id> ids = Futures.getUnchecked(index.query(query, ImmutableList.of(Publisher.DBPEDIA), Selection.ALL));
@@ -110,7 +110,7 @@ public class EsTopicIndexTest {
         index.index(topic);
         Thread.sleep(1000);
         
-        NodeSet query = new NodeSet(ImmutableList.of(
+        AttributeQuerySet query = new AttributeQuerySet(ImmutableList.of(
             Attributes.ID.createQuery(Operators.EQUALS, ImmutableList.of(topic.getId())),
             Attributes.ALIASES_VALUE.createQuery(Operators.EQUALS, ImmutableList.of("an:Alias"))
         ));
@@ -125,7 +125,7 @@ public class EsTopicIndexTest {
         index.index(topic);
         Thread.sleep(1000);
         
-        NodeSet query = new NodeSet(ImmutableList.of(
+        AttributeQuerySet query = new AttributeQuerySet(ImmutableList.of(
             Attributes.ID.createQuery(Operators.EQUALS, ImmutableList.of(topic.getId()))
         ));
         Iterable<Id> ids = Futures.getUnchecked(index.query(query, ImmutableList.of(Publisher.DBPEDIA), Selection.ALL));
@@ -141,7 +141,7 @@ public class EsTopicIndexTest {
         index.index(topic1);
         Thread.sleep(1000);
         
-        NodeSet query = new NodeSet(ImmutableList.of(
+        AttributeQuerySet query = new AttributeQuerySet(ImmutableList.of(
             Attributes.ALIASES_VALUE.createQuery(Operators.EQUALS, ImmutableList.of("an:Alias"))
         ));
         Iterable<Id> ids = Futures.getUnchecked(index.query(query, ImmutableList.of(Publisher.DBPEDIA), 
@@ -154,6 +154,10 @@ public class EsTopicIndexTest {
 
         ids = Futures.getUnchecked(index.query(query, ImmutableList.of(Publisher.DBPEDIA), 
             new Selection(1,1)));
+        assertThat(Iterables.getOnlyElement(ids), is(topic2.getId()));
+
+        ids = Futures.getUnchecked(index.query(query, ImmutableList.of(Publisher.DBPEDIA), 
+            new Selection(1,5)));
         assertThat(Iterables.getOnlyElement(ids), is(topic2.getId()));
     }
 

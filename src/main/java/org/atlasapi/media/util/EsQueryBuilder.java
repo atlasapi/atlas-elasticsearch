@@ -11,7 +11,7 @@ import org.atlasapi.content.criteria.EnumAttributeQuery;
 import org.atlasapi.content.criteria.IdAttributeQuery;
 import org.atlasapi.content.criteria.IntegerAttributeQuery;
 import org.atlasapi.content.criteria.MatchesNothing;
-import org.atlasapi.content.criteria.NodeSet;
+import org.atlasapi.content.criteria.AttributeQuerySet;
 import org.atlasapi.content.criteria.QueryNode;
 import org.atlasapi.content.criteria.QueryNode.IntermediateNode;
 import org.atlasapi.content.criteria.QueryNode.TerminalNode;
@@ -45,7 +45,7 @@ public class EsQueryBuilder {
 
     private static final Joiner PATH_JOINER = Joiner.on(".");
 
-    public QueryBuilder buildQuery(NodeSet operands) {
+    public QueryBuilder buildQuery(AttributeQuerySet operands) {
         return operands.accept(new QueryNodeVisitor<QueryBuilder>() {
 
             Stack<String> traversed = new Stack<String>();
