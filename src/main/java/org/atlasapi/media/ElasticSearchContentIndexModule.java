@@ -1,5 +1,6 @@
 package org.atlasapi.media;
 
+import org.atlasapi.media.content.EsContentIndex;
 import org.atlasapi.media.content.EsContentIndexer;
 import org.atlasapi.media.content.EsContentSearcher;
 import org.atlasapi.media.content.schedule.EsScheduleIndex;
@@ -18,6 +19,7 @@ import com.metabroadcast.common.time.SystemClock;
 public class ElasticSearchContentIndexModule {
 
     private final EsContentIndexer contentIndexer;
+    private final EsContentIndex contentIndex;
     private final EsScheduleIndex scheduleIndex;
     private final EsPopularTopicIndex topicSearcher;
     private final EsContentSearcher contentSearcher;
@@ -28,6 +30,7 @@ public class ElasticSearchContentIndexModule {
                 settings(ImmutableSettings.settingsBuilder().put("discovery.zen.ping.unicast.hosts", seeds)).
                 build().start();
         this.contentIndexer = new EsContentIndexer(index, new SystemClock(), requestTimeout);
+        this.contentIndex = new EsContentIndex(index, EsSchema.INDEX_NAME);
         this.scheduleIndex = new EsScheduleIndex(index, new SystemClock());
         this.topicSearcher = new EsPopularTopicIndex(index);
         this.contentSearcher = new EsContentSearcher(index);
@@ -52,6 +55,10 @@ public class ElasticSearchContentIndexModule {
 
     public EsContentIndexer contentIndexer() {
         return contentIndexer;
+    }
+    
+    public EsContentIndex contentIndex() {
+        return contentIndex;
     }
 
     public EsScheduleIndex scheduleIndex() {
