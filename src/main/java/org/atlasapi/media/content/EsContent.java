@@ -14,7 +14,7 @@ public class EsContent extends EsObject {
     public final static String CHILD_TYPE = "child_item";
     public final static String TOP_ITEM_TYPE = "top_item";
 
-    public final static String ID = "aid";
+    public final static String ID = "id";
     public final static String URI = "uri";
     public final static String TITLE = "title";
     public final static String FLATTENED_TITLE = "flattenedTitle";

@@ -1,10 +1,13 @@
 package org.atlasapi.media;
 
+import java.util.concurrent.TimeUnit;
+
 import org.atlasapi.media.content.EsContentIndex;
 import org.atlasapi.media.content.EsContentIndexer;
 import org.atlasapi.media.content.EsContentSearcher;
 import org.atlasapi.media.content.schedule.EsScheduleIndex;
 import org.atlasapi.media.topic.EsPopularTopicIndex;
+import org.atlasapi.media.topic.EsTopicIndex;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
@@ -21,7 +24,8 @@ public class ElasticSearchContentIndexModule {
     private final EsContentIndexer contentIndexer;
     private final EsContentIndex contentIndex;
     private final EsScheduleIndex scheduleIndex;
-    private final EsPopularTopicIndex topicSearcher;
+    private final EsTopicIndex topicIndex;
+    private final EsPopularTopicIndex popularTopicsIndex;
     private final EsContentSearcher contentSearcher;
 
     public ElasticSearchContentIndexModule(String seeds, long requestTimeout) {
@@ -32,7 +36,8 @@ public class ElasticSearchContentIndexModule {
         this.contentIndexer = new EsContentIndexer(index, new SystemClock(), requestTimeout);
         this.contentIndex = new EsContentIndex(index, EsSchema.INDEX_NAME);
         this.scheduleIndex = new EsScheduleIndex(index, new SystemClock());
-        this.topicSearcher = new EsPopularTopicIndex(index);
+        this.popularTopicsIndex = new EsPopularTopicIndex(index);
+        this.topicIndex = new EsTopicIndex(index, "topics", 60, TimeUnit.SECONDS);
         this.contentSearcher = new EsContentSearcher(index);
     }
 
@@ -64,9 +69,13 @@ public class ElasticSearchContentIndexModule {
     public EsScheduleIndex scheduleIndex() {
         return scheduleIndex;
     }
+    
+    public EsTopicIndex topicIndex() {
+        return topicIndex;
+    }
 
     public EsPopularTopicIndex topicSearcher() {
-        return topicSearcher;
+        return popularTopicsIndex;
     }
     
     public EsContentSearcher contentSearcher() {
