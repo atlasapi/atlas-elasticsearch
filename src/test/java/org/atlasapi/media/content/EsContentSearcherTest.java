@@ -31,6 +31,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.metabroadcast.common.query.Selection;
+import com.metabroadcast.common.time.DateTimeZones;
 
 public class EsContentSearcherTest {
 
@@ -66,18 +67,22 @@ public class EsContentSearcherTest {
         item1.setTitle("title1");
         item1.setId(Id.valueOf(1));
         item1.addVersion(version1);
+        item1.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
         Item item2 = new Item("uri2", "curie2", Publisher.METABROADCAST);
         item2.setTitle("title2");
         item2.setId(Id.valueOf(2));
         item2.addVersion(version1);
+        item2.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
         Item item3 = new Item("uri3", "curie3", Publisher.METABROADCAST);
         item3.setTitle("pippo");
         item3.setId(Id.valueOf(3));
         item3.addVersion(version2);
+        item3.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
         Item item4 = new Item("uri4", "curie4", Publisher.METABROADCAST);
         item4.setTitle("title4");
         item4.setId(Id.valueOf(4));
         item4.addVersion(version2);
+        item4.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
         
         Brand brand1 = new Brand("buri1", "buri1", Publisher.METABROADCAST);
         brand1.setTitle("title");

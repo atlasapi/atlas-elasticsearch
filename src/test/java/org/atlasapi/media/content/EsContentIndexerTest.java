@@ -82,7 +82,7 @@ public final class EsContentIndexerTest {
         assertTrue(esClient.client()
             .admin().indices()
             .exists(Requests.indicesExistsRequest("schedule-1980")).actionGet()
-            .exists());
+            .isExists());
 
         ListenableActionFuture<SearchResponse> result1 = esClient.client()
             .prepareSearch(EsSchema.INDEX_NAME)
@@ -155,7 +155,7 @@ public final class EsContentIndexerTest {
             .execute();
         
         Facets facets = result.actionGet(60, TimeUnit.SECONDS).getFacets();
-        List<? extends Entry> terms = facets.facet(TermsFacet.class, "topics").entries();
+        List<? extends Entry> terms = facets.facet(TermsFacet.class, "topics").getEntries();
         
         assertEquals(2, terms.size());
         assertEquals("1", terms.get(0).getTerm());

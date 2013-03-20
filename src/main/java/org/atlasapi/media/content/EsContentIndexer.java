@@ -459,8 +459,8 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
     private Map<String, Object> trySearchParent(ParentRef parent) {
         GetRequest request = Requests.getRequest(INDEX_NAME).id(getDocId(parent));
         GetResponse response = timeoutGet(esClient.client().get(request));
-        if (response.exists()) {
-            return response.sourceAsMap();
+        if (response.isExists()) {
+            return response.getSource();
         } else {
             return null;
         }
@@ -472,8 +472,8 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
                     .parent(getDocId(parent))
                     .id(getDocId(child));
             GetResponse response = timeoutGet(esClient.client().get(request));
-            if (response.exists()) {
-                return response.sourceAsMap();
+            if (response.isExists()) {
+                return response.getSource();
             } else {
                 return null;
             }

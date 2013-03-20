@@ -183,12 +183,12 @@ public class EsScheduleIndex implements ScheduleIndex {
             public ScheduleRef apply(@Nullable SearchResponse input) {
                 ScheduleRef.Builder refBuilder = ScheduleRef.forChannel(channel);
                 int hits = 0;
-                for (SearchHit hit : input.hits()) {
+                for (SearchHit hit : input.getHits()) {
                     hits++;
                     refBuilder.addEntries(validEntries(hit,channel, scheduleBroadcastFilter));
                 }
                 ScheduleRef ref = refBuilder.build();
-                log.info("{}: {} hits => {} entries, ({} queries, {}ms)", new Object[]{Thread.currentThread().getId(), hits, ref.getScheduleEntries().size(), 1, input.tookInMillis()});
+                log.info("{}: {} hits => {} entries, ({} queries, {}ms)", new Object[]{Thread.currentThread().getId(), hits, ref.getScheduleEntries().size(), 1, input.getTookInMillis()});
                 return ref;
             }
         };

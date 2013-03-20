@@ -141,6 +141,6 @@ public class EsPopularTopicsIndexTest {
     }
 
     private long count() throws Exception {
-        return esClient.client().count(Requests.countRequest(EsSchema.INDEX_NAME)).get().count();
+        return esClient.client().count(Requests.countRequest(EsSchema.INDEX_NAME)).get().getCount();
     }
 }

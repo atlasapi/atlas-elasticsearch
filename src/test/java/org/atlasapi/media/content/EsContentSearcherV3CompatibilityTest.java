@@ -33,6 +33,7 @@ import org.elasticsearch.action.count.CountRequestBuilder;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
+import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.junit.After;
 import org.junit.Before;
@@ -44,6 +45,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.query.Selection;
+import com.metabroadcast.common.time.DateTimeZones;
 import com.metabroadcast.common.time.SystemClock;
 
 public class EsContentSearcherV3CompatibilityTest {
@@ -91,7 +93,7 @@ public class EsContentSearcherV3CompatibilityTest {
     private long count() throws InterruptedException, ExecutionException {
         return new CountRequestBuilder(esClient.client())
             .setIndices(EsSchema.INDEX_NAME)
-            .execute().get().count();
+            .execute().get().getCount();
     }
 
     @After
@@ -405,6 +407,7 @@ public class EsContentSearcherV3CompatibilityTest {
         i.setCanonicalUri(uri);
         i.setDescription(description);
         i.setPublisher(Publisher.BBC);
+        i.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
         return i;
     }
 
