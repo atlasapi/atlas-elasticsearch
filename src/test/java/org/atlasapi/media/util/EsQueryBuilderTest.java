@@ -102,7 +102,7 @@ public class EsQueryBuilderTest {
 
         index(esClient, INDEX, TYPE, "one", Resources.toString(Resources.getResource("es-query-builder-object.json"), Charsets.UTF_8)).actionGet();
 
-        Thread.sleep(1000);
+        Thread.sleep(1500);
 
     }
 

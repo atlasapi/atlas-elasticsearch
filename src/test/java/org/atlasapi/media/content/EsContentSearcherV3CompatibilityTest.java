@@ -273,6 +273,7 @@ public class EsContentSearcherV3CompatibilityTest {
         eastItem.setTitle("east");
         eastItem.setId(Id.valueOf(2518));
         eastItem.setParentRef(ParentRef.parentRefFrom(eastBrand));
+        eastItem.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
         
         eastBrand.setChildRefs(Arrays.asList(eastItem.childRef()));
         indexer.index(eastBrand);
