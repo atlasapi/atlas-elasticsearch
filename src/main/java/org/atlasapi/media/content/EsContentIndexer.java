@@ -10,8 +10,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.atlasapi.media.content.Container;
-import org.atlasapi.media.content.Content;
+import org.atlasapi.media.content.schedule.EsScheduleIndexNames;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Encoding;
@@ -23,8 +22,6 @@ import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.media.util.EsPersistenceException;
 import org.atlasapi.media.util.Strings;
-import org.atlasapi.media.content.ContentIndexer;
-import org.atlasapi.media.content.schedule.EsScheduleIndexNames;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.ActionRequest;
@@ -43,6 +40,7 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
@@ -227,9 +225,32 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
             );
         putMapping.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
     }
-
+    
     @Override
-    public void index(Item item) throws IndexException {
+    public void index(Content content) throws IndexException {
+        content.accept(new ContentVisitorAdapter<Void>() {
+            @Override
+            protected Void visitItem(Item item) {
+                try {
+                    indexItem(item);
+                } catch (IndexException e) {
+                    throw Throwables.propagate(e);
+                }
+                return null;
+            }
+            @Override
+            protected Void visitContainer(Container container) {
+                try {
+                    indexContainer(container);
+                } catch (IndexException e) {
+                    throw Throwables.propagate(e);
+                }
+                return null;
+            }
+        });
+    };
+
+    private void indexItem(Item item) throws IndexException {
         try {
             EsContent esContent = toEsContent(item);
             
@@ -324,8 +345,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
         return requests.build();
     }
 
-    @Override
-    public void index(Container container) {
+    private void indexContainer(Container container) throws IndexException {
         EsContent indexed = new EsContent()
             .id(container.getId().longValue())
             .uri(container.getCanonicalUri())
