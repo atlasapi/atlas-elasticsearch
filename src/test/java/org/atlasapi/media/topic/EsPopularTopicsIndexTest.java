@@ -112,7 +112,7 @@ public class EsPopularTopicsIndexTest {
         
         TopicResolver resolver = mock(TopicResolver.class);
         when(resolver.resolveIds(argThat(hasItems(Id.valueOf(1),Id.valueOf(2)))))
-            .thenReturn(Resolved.valueOf(ImmutableList.of(new Topic(Id.valueOf(1)),new Topic(Id.valueOf(2)))));
+            .thenReturn(Futures.immediateFuture(Resolved.valueOf(ImmutableList.of(new Topic(Id.valueOf(1)),new Topic(Id.valueOf(2))))));
         
         PopularTopicIndex searcher = new EsPopularTopicIndex(esClient);
         
