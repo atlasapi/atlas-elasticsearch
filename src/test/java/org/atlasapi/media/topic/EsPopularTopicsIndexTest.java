@@ -1,5 +1,6 @@
 package org.atlasapi.media.topic;
 
+import static org.atlasapi.media.util.ElasticSearchHelper.refresh;
 import static org.hamcrest.Matchers.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.argThat;
@@ -105,10 +106,7 @@ public class EsPopularTopicsIndexTest {
         indexer.index(item3);
         indexer.index(item4);
         indexer.index(item5);
-        
-        while(count() < 5) {
-            Thread.sleep(50);
-        }
+        refresh(esClient);
         
         TopicResolver resolver = mock(TopicResolver.class);
         when(resolver.resolveIds(argThat(hasItems(Id.valueOf(1),Id.valueOf(2)))))
@@ -140,7 +138,4 @@ public class EsPopularTopicsIndexTest {
         return topicIds;
     }
 
-    private long count() throws Exception {
-        return esClient.client().count(Requests.countRequest(EsSchema.INDEX_NAME)).get().getCount();
-    }
 }

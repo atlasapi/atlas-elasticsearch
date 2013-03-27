@@ -5,6 +5,7 @@ import static org.atlasapi.media.topic.EsTopic.DESCRIPTION;
 import static org.atlasapi.media.topic.EsTopic.ID;
 import static org.atlasapi.media.topic.EsTopic.SOURCE;
 import static org.atlasapi.media.topic.EsTopic.TITLE;
+import static org.atlasapi.media.util.ElasticSearchHelper.refresh;
 import static org.atlasapi.media.util.EsAlias.VALUE;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -72,7 +73,7 @@ public class EsTopicIndexTest {
         
         index.index(topic);
         
-        Thread.sleep(1000);
+        refresh(esClient);
         
         GetResponse got = esClient.client().get(
             Requests.getRequest(indexName).id("1234")
@@ -94,7 +95,7 @@ public class EsTopicIndexTest {
         Topic topic = topic(1234, Publisher.DBPEDIA, "title", "description", "an:Alias");
         
         index.index(topic);
-        Thread.sleep(1000);
+        refresh(esClient);
         
         AttributeQuerySet query = new AttributeQuerySet(ImmutableList.of(
             Attributes.ID.createQuery(Operators.EQUALS, ImmutableList.of(topic.getId()))
@@ -108,7 +109,7 @@ public class EsTopicIndexTest {
         Topic topic = topic(1234, Publisher.DBPEDIA, "title", "description", "an:Alias");
         
         index.index(topic);
-        Thread.sleep(1000);
+        refresh(esClient);
         
         AttributeQuerySet query = new AttributeQuerySet(ImmutableList.of(
             Attributes.ID.createQuery(Operators.EQUALS, ImmutableList.of(topic.getId())),
@@ -123,7 +124,7 @@ public class EsTopicIndexTest {
         Topic topic = topic(1234, Publisher.METABROADCAST, "title", "description", "an:Alias");
         
         index.index(topic);
-        Thread.sleep(1000);
+        refresh(esClient);
         
         AttributeQuerySet query = new AttributeQuerySet(ImmutableList.of(
             Attributes.ID.createQuery(Operators.EQUALS, ImmutableList.of(topic.getId()))
@@ -139,7 +140,7 @@ public class EsTopicIndexTest {
         
         index.index(topic2);
         index.index(topic1);
-        Thread.sleep(1000);
+        refresh(esClient);
         
         AttributeQuerySet query = new AttributeQuerySet(ImmutableList.of(
             Attributes.ALIASES_VALUE.createQuery(Operators.EQUALS, ImmutableList.of("an:Alias"))

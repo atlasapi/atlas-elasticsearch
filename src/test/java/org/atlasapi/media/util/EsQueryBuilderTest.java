@@ -1,5 +1,6 @@
 package org.atlasapi.media.util;
 
+import static org.atlasapi.media.util.ElasticSearchHelper.refresh;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -102,7 +103,7 @@ public class EsQueryBuilderTest {
 
         index(esClient, INDEX, TYPE, "one", Resources.toString(Resources.getResource("es-query-builder-object.json"), Charsets.UTF_8)).actionGet();
 
-        Thread.sleep(1500);
+        refresh(esClient);
 
     }
 

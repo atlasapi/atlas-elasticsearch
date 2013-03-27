@@ -2,6 +2,7 @@ package org.atlasapi.media.content.schedule;
 
 import static com.metabroadcast.common.time.DateTimeZones.UTC;
 import static org.atlasapi.media.entity.Publisher.METABROADCAST;
+import static org.atlasapi.media.util.ElasticSearchHelper.refresh;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -16,8 +17,6 @@ import org.apache.log4j.PatternLayout;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.EsContentIndexer;
-import org.atlasapi.media.content.schedule.EsScheduleIndex;
-import org.atlasapi.media.content.schedule.ScheduleRef;
 import org.atlasapi.media.content.schedule.ScheduleRef.ScheduleRefEntry;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
@@ -88,7 +87,7 @@ public class EsScheduleIndexTest {
         Item contained = itemWithBroadcast(1L, "contained", channel1.getCanonicalUri(), new DateTime(10, UTC), new DateTime(20, UTC));
         
         contentIndexer.index(contained);
-        Thread.sleep(1000);
+        refresh(esClient);
         scheduleIndex.updateExistingIndices();
         
         Interval interval = new Interval(new DateTime(00, UTC), new DateTime(30, UTC));
@@ -101,6 +100,8 @@ public class EsScheduleIndexTest {
         assertThat(entries.get(0).getItemId(), is(contained.getId()));
         
     }
+
+
     
     @Test
     public void testReturnsContentOverlappingInterval() throws Exception {
@@ -111,7 +112,7 @@ public class EsScheduleIndexTest {
         
         contentIndexer.index(overlapEnd);
         contentIndexer.index(overlapStart);
-        Thread.sleep(1000);
+        refresh(esClient);
         scheduleIndex.updateExistingIndices();
 
         ListenableFuture<ScheduleRef> futureEntries = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
@@ -131,7 +132,7 @@ public class EsScheduleIndexTest {
         Item containsInterval = itemWithBroadcast(1L, "contains", channel1.getCanonicalUri(), start, start.plusHours(3));
         
         contentIndexer.index(containsInterval);
-        Thread.sleep(1000);
+        refresh(esClient);
         scheduleIndex.updateExistingIndices();
         
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
@@ -150,7 +151,7 @@ public class EsScheduleIndexTest {
         Item wrongChannel = itemWithBroadcast(1L, "wrong", "http://www.bbc.co.uk/services/bbctwo", start.plusHours(1), start.plusHours(2));
         
         contentIndexer.index(wrongChannel);
-        Thread.sleep(1000);
+        refresh(esClient);
         scheduleIndex.updateExistingIndices();
         
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
@@ -168,7 +169,7 @@ public class EsScheduleIndexTest {
         Item tooLate = itemWithBroadcast(1L, "late", channel1.getCanonicalUri(), start.plusHours(3), start.plusHours(4));
       
         contentIndexer.index(tooLate);
-        Thread.sleep(1000);
+        refresh(esClient);
         scheduleIndex.updateExistingIndices();
           
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
@@ -186,7 +187,7 @@ public class EsScheduleIndexTest {
         Item containsInstance = itemWithBroadcast(1L, "late", channel1.getCanonicalUri(), start.minusHours(1), start.plusHours(4));
         
         contentIndexer.index(containsInstance);
-        Thread.sleep(1000);
+        refresh(esClient);
         scheduleIndex.updateExistingIndices();
         
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start, start));
@@ -204,7 +205,7 @@ public class EsScheduleIndexTest {
         Item abutting = itemWithBroadcast(1L, "late", channel1.getCanonicalUri(), start, start.plusHours(4));
         
         contentIndexer.index(abutting);
-        Thread.sleep(1000);
+        refresh(esClient);
         scheduleIndex.updateExistingIndices();
         
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start, start));
@@ -222,7 +223,7 @@ public class EsScheduleIndexTest {
         Item abutting = itemWithBroadcast(1L, "late", channel1.getCanonicalUri(), start.minusHours(1), start);
         
         contentIndexer.index(abutting);
-        Thread.sleep(1000);
+        refresh(esClient);
         scheduleIndex.updateExistingIndices();
         
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start, start));
@@ -241,7 +242,7 @@ public class EsScheduleIndexTest {
         Item exactMatch = itemWithBroadcast(Long.MAX_VALUE-1, "exact", channel1.getCanonicalUri(), interval.getStart(), interval.getEnd());
         
         contentIndexer.index(exactMatch);
-        Thread.sleep(1000);
+        refresh(esClient);
         scheduleIndex.updateExistingIndices();
         
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, interval);
@@ -265,7 +266,7 @@ public class EsScheduleIndexTest {
         Iterables.getOnlyElement(itemWith2Broadcasts.getVersions()).addBroadcast(broadcast);
         
         contentIndexer.index(itemWith2Broadcasts);
-        Thread.sleep(1000);
+        refresh(esClient);
         scheduleIndex.updateExistingIndices();
         
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, interval2);
@@ -300,7 +301,7 @@ public class EsScheduleIndexTest {
         Iterables.getOnlyElement(itemWith2Broadcasts.getVersions()).addBroadcast(broadcast);
         
         contentIndexer.index(itemWith2Broadcasts);
-        Thread.sleep(1000);
+        refresh(esClient);
         scheduleIndex.updateExistingIndices();
         
         Interval queryInterval = new Interval(interval1.getStartMillis(), interval2.getEndMillis(), DateTimeZones.UTC);
@@ -326,7 +327,7 @@ public class EsScheduleIndexTest {
         
         contentIndexer.index(childItem);
         contentIndexer.index(topItem);
-        Thread.sleep(1000);
+        refresh(esClient);
         scheduleIndex.updateExistingIndices();
         
         Interval queryInterval = new Interval(interval1.getStartMillis(), interval2.getEndMillis(), DateTimeZones.UTC);
@@ -345,7 +346,7 @@ public class EsScheduleIndexTest {
         Item recentItem = itemWithBroadcast(1L, "recent", channel1.getCanonicalUri(), interval.getStart(), interval.getEnd());
         
         contentIndexer.index(recentItem);
-        Thread.sleep(1000);
+        refresh(esClient);
         
         scheduleIndex.updateExistingIndices();
         

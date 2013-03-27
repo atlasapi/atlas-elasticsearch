@@ -3,6 +3,7 @@ package org.atlasapi.media.content;
 import static org.atlasapi.media.entity.testing.ComplexBroadcastTestDataBuilder.broadcast;
 import static org.atlasapi.media.entity.testing.ComplexItemTestDataBuilder.complexItem;
 import static org.atlasapi.media.entity.testing.VersionTestDataBuilder.version;
+import static org.atlasapi.media.util.ElasticSearchHelper.refresh;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
@@ -81,11 +82,8 @@ public class EsContentSearcherV3CompatibilityTest {
                 indexed++;
             }
         }
-        long count = 0;
-        for(int limit = 0; count < indexed && limit < 100; count = count(), limit++) {
-            Thread.sleep(50);
-        }
-        if (count < indexed) {
+        refresh(esClient);
+        if (count() < indexed) {
             fail("Fewer than " + indexed + " content indexed");
         }
     }
@@ -221,7 +219,7 @@ public class EsContentSearcherV3CompatibilityTest {
         theApprentice2.setTitle("Completely Different2");
         
         indexer.index(theApprentice2);
-        Thread.sleep(1000);
+        refresh(esClient);
 
         checkNot(searcher.search(title("aprentice")).get(), theApprentice);
         check(searcher.search(title("Completely Different2")).get(), theApprentice);
@@ -242,7 +240,7 @@ public class EsContentSearcherV3CompatibilityTest {
         Item.copyTo(theApprenticeItem, theApprenticeItem2);
         theApprenticeItem2.setSpecialization(Specialization.RADIO);
         indexer.index(theApprenticeItem2);
-        Thread.sleep(1000);
+        refresh(esClient);
         
         checkNot(searcher.search(specializedTitle("aprentice", Specialization.TV)).get(), theApprentice);
         check(searcher.search(specializedTitle("aprentice", Specialization.RADIO)).get(), theApprentice);
@@ -278,7 +276,7 @@ public class EsContentSearcherV3CompatibilityTest {
         eastBrand.setChildRefs(Arrays.asList(eastItem.childRef()));
         indexer.index(eastBrand);
         indexer.index(eastItem);
-        Thread.sleep(2000);
+        refresh(esClient);
         
         check(searcher.search(new SearchQuery("east", Selection.ALL, ImmutableSet.of(Publisher.ARCHIVE_ORG), 1.0f, 0.0f, 0.0f)).get(), eastBrand);
     }

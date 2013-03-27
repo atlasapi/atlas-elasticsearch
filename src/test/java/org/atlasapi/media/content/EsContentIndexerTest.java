@@ -1,5 +1,6 @@
 package org.atlasapi.media.content;
 
+import static org.atlasapi.media.util.ElasticSearchHelper.refresh;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -77,7 +78,7 @@ public final class EsContentIndexerTest {
         
         contentIndexer.index(item);
         
-        Thread.sleep(1000);
+        refresh(esClient);
 
         assertTrue(esClient.client()
             .admin().indices()
@@ -142,7 +143,7 @@ public final class EsContentIndexerTest {
         contentIndexer.index(item2);
         contentIndexer.index(item3);
         
-        Thread.sleep(1000);
+        refresh(esClient);
         
         ListenableActionFuture<SearchResponse> result = esClient.client()
             .prepareSearch(EsSchema.INDEX_NAME)

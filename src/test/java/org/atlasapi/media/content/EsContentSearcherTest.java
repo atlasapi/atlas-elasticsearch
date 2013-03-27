@@ -1,5 +1,6 @@
 package org.atlasapi.media.content;
 
+import static org.atlasapi.media.util.ElasticSearchHelper.refresh;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
@@ -109,7 +110,7 @@ public class EsContentSearcherTest {
         contentIndexer.index(item3);
         contentIndexer.index(item4);
 
-        Thread.sleep(1000);
+        refresh(esClient);
 
         ListenableFuture<SearchResults> future = contentSearcher.search(new SearchQuery("title",
                 Selection.offsetBy(0),
