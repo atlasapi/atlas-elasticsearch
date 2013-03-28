@@ -154,6 +154,14 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
                                         .endObject()
                                     .endObject()
                                 .endObject()
+                                .startObject(EsContent.TOPICS)
+                                    .field("type").value("nested")
+                                    .startObject("properties")
+                                        .startObject(EsTopicMapping.ID)
+                                            .field("type").value("long")
+                                        .endObject()
+                                    .endObject()
+                                .endObject()
                                 .startObject(EsContent.LOCATIONS)
                                     .field("type").value("nested")
                                 .endObject()
@@ -212,6 +220,14 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
                                         .startObject(EsBroadcast.CHANNEL)
                                             .field("type").value("string")
                                             .field("index").value("not_analyzed")
+                                        .endObject()
+                                    .endObject()
+                                .endObject()
+                                .startObject(EsContent.TOPICS)
+                                    .field("type").value("nested")
+                                    .startObject("properties")
+                                        .startObject(EsTopicMapping.ID)
+                                            .field("type").value("long")
                                         .endObject()
                                     .endObject()
                                 .endObject()
@@ -367,6 +383,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
             .id(getDocId(container))
             .source(indexed.toMap());
         timeoutGet(esClient.client().index(request));
+        log.info("Indexed {}", new Object[]{container});
     }
 
 
