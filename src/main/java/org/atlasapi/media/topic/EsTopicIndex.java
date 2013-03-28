@@ -102,7 +102,9 @@ public class EsTopicIndex extends AbstractIdleService implements TopicIndex {
                 }
             ))
             .title(topic.getTitle())
-            .description(topic.getDescription());
+            .description(topic.getDescription())
+            .namespace(topic.getNamespace())
+            .value(topic.getValue());
     }
     
     @Override

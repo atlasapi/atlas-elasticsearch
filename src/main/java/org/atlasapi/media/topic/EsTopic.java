@@ -35,6 +35,14 @@ public class EsTopic extends EsObject {
                             .field("type").value("string")
                             .field("index").value("analyzed")
                         .endObject()
+                        .startObject(NAMESPACE)
+                            .field("type").value("string")
+                            .field("index").value("analyzed")
+                        .endObject()
+                        .startObject(VALUE)
+                            .field("type").value("string")
+                            .field("index").value("analyzed")
+                        .endObject()
                         .startObject(ALIASES)
                             .field("type").value("nested")
                             .startObject("properties")
@@ -60,6 +68,8 @@ public class EsTopic extends EsObject {
     public static final String ALIASES = "aliases";
     public static final String TITLE = "title";
     public static final String DESCRIPTION = "description";
+    public static final String NAMESPACE = "namespace";
+    public static final String VALUE = "value";
 
     public EsTopic id(long id) {
         properties.put(ID, id);
@@ -85,4 +95,15 @@ public class EsTopic extends EsObject {
         properties.put(DESCRIPTION, desc);
         return this;
     }
+    
+    public EsTopic namespace(String ns) {
+        properties.put(NAMESPACE, ns);
+        return this;
+    }
+    
+    public EsTopic value(String value) {
+        properties.put(VALUE, value);
+        return this;
+    }
+    
 }
