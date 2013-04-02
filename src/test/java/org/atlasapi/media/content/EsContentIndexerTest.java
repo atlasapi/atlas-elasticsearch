@@ -5,7 +5,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.ConsoleAppender;
@@ -20,12 +19,12 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.TopicRef.Relationship;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.media.util.ElasticSearchHelper;
 import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.facet.FacetBuilders;
 import org.elasticsearch.search.facet.Facets;
@@ -38,13 +37,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.metabroadcast.common.time.DateTimeZones;
+import com.metabroadcast.common.time.SystemClock;
 
 public final class EsContentIndexerTest {
     
-    private final Node esClient = NodeBuilder.nodeBuilder()
-        .local(true).clusterName(UUID.randomUUID().toString())
-        .build().start();
-    private final EsContentIndexer contentIndexer = new EsContentIndexer(esClient);
+    private final Node esClient = ElasticSearchHelper.testNode();
+    private final EsContentIndexer contentIndexer = new EsContentIndexer(esClient, EsSchema.CONTENT_INDEX, new SystemClock(), 60000);
 
     @BeforeClass
     public static void before() throws Exception {
@@ -61,8 +59,7 @@ public final class EsContentIndexerTest {
     
     @After
     public void after() throws Exception {
-        esClient.client().admin().indices()
-            .delete(Requests.deleteIndexRequest(EsSchema.INDEX_NAME)).get();
+        ElasticSearchHelper.clearIndices(esClient);
         esClient.close();
     }
 
@@ -86,7 +83,7 @@ public final class EsContentIndexerTest {
             .isExists());
 
         ListenableActionFuture<SearchResponse> result1 = esClient.client()
-            .prepareSearch(EsSchema.INDEX_NAME)
+            .prepareSearch(EsSchema.CONTENT_INDEX)
             .setQuery(QueryBuilders.nestedQuery("broadcasts", 
                     QueryBuilders.fieldQuery("channel", "MB")
             )).execute();
@@ -94,7 +91,7 @@ public final class EsContentIndexerTest {
         assertEquals(1, hits1.totalHits());
 
         ListenableActionFuture<SearchResponse> result2 = esClient.client()
-            .prepareSearch(EsSchema.INDEX_NAME)
+            .prepareSearch(EsSchema.CONTENT_INDEX)
             .setQuery(QueryBuilders.nestedQuery("broadcasts",
                 QueryBuilders.rangeQuery("transmissionTime")
                     .from(broadcastStart.minusDays(1).toDate())
@@ -103,7 +100,7 @@ public final class EsContentIndexerTest {
         assertEquals(1, hits2.totalHits());
         
         ListenableActionFuture<SearchResponse> result3 = esClient.client()
-            .prepareSearch(EsSchema.INDEX_NAME)
+            .prepareSearch(EsSchema.CONTENT_INDEX)
             .setQuery(QueryBuilders.nestedQuery("broadcasts", 
                 QueryBuilders.rangeQuery("transmissionTime")
                     .from(new DateTime(DateTimeZones.UTC).toDate())
@@ -145,19 +142,23 @@ public final class EsContentIndexerTest {
         
         refresh(esClient);
         
-        ListenableActionFuture<SearchResponse> result = esClient.client()
-            .prepareSearch(EsSchema.INDEX_NAME)
-            .setQuery(QueryBuilders.nestedQuery("broadcasts",
-                QueryBuilders.rangeQuery("transmissionTime")
+        ListenableActionFuture<SearchResponse> futureResult = esClient.client()
+            .prepareSearch(EsSchema.CONTENT_INDEX)
+            .setQuery(QueryBuilders.nestedQuery(EsContent.BROADCASTS,
+                QueryBuilders.rangeQuery(EsBroadcast.TRANSMISSION_TIME)
                     .from(now.minusHours(1).toDate())
                     .to(now.plusHours(1).toDate())
             ))
-            .addFacet(FacetBuilders.termsFacet("topics").field("topics.id"))
+            .addFacet(FacetBuilders.termsFacet("topicFacet")
+                .nested(EsContent.TOPICS + "." + EsTopicMapping.TOPIC)
+                .field(EsContent.TOPICS + "." + EsTopicMapping.TOPIC_ID))
             .execute();
         
-        Facets facets = result.actionGet(60, TimeUnit.SECONDS).getFacets();
-        List<? extends Entry> terms = facets.facet(TermsFacet.class, "topics").getEntries();
         
+        SearchResponse result = futureResult.actionGet(1, TimeUnit.SECONDS);
+        Facets facets = result.getFacets();
+        List<? extends Entry> terms = facets.facet(TermsFacet.class, "topicFacet").getEntries();
+
         assertEquals(2, terms.size());
         assertEquals("1", terms.get(0).getTerm());
         assertEquals(2, terms.get(0).getCount());

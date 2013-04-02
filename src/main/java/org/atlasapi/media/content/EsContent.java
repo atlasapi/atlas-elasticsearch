@@ -1,18 +1,19 @@
 package org.atlasapi.media.content;
 
+import java.io.IOException;
 import java.util.Collection;
 
 import org.atlasapi.media.util.EsObject;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 
 import com.google.common.collect.Iterables;
 
-/**
- */
 public class EsContent extends EsObject {
 
-    public final static String TOP_LEVEL_TYPE = "container";
-    public final static String CHILD_TYPE = "child_item";
-    public final static String TOP_ITEM_TYPE = "top_item";
+    public final static String TOP_LEVEL_CONTAINER = "container";
+    public final static String CHILD_ITEM = "child_item";
+    public final static String TOP_LEVEL_ITEM = "top_item";
 
     public final static String ID = "id";
     public final static String URI = "uri";
@@ -20,12 +21,109 @@ public class EsContent extends EsObject {
     public final static String FLATTENED_TITLE = "flattenedTitle";
     public final static String PARENT_TITLE = "parentTitle";
     public final static String PARENT_FLATTENED_TITLE = "parentFlattenedTitle";
-    public final static String PUBLISHER = "publisher";
+    public final static String SOURCE = "source";
     public final static String SPECIALIZATION = "specialization";
     public final static String BROADCASTS = "broadcasts";
     public final static String LOCATIONS = "locations";
     public final static String TOPICS = "topics";
     public final static String HAS_CHILDREN = "hasChildren";
+    
+    public static final XContentBuilder getTopLevelMapping(String type) throws IOException {
+        return addCommonProperties(XContentFactory.jsonBuilder()
+            .startObject()
+                .startObject(type)
+                    .startObject("_all")
+                        .field("enabled").value(false)
+                    .endObject()
+                    .startObject("properties"))
+                    .endObject()
+                .endObject()
+            .endObject();
+    }
+     
+    public static final XContentBuilder getChildMapping() throws IOException {
+        return addCommonProperties(XContentFactory.jsonBuilder()
+            .startObject()
+                .startObject(EsContent.CHILD_ITEM)
+                    .startObject("_parent")
+                        .field("type").value(EsContent.TOP_LEVEL_CONTAINER)
+                    .endObject()
+                    .startObject("_all")
+                        .field("enabled").value(false)
+                    .endObject()
+                    .startObject("properties"))
+                    .endObject()
+                .endObject()
+            .endObject();
+    }
+    
+
+    public static XContentBuilder getScheduleMapping() throws IOException {
+        return addSheduleOnlyProperties(XContentFactory.jsonBuilder()
+            .startObject()
+                .startObject(EsContent.TOP_LEVEL_ITEM)
+                    .startObject("_all")
+                        .field("enabled").value(false)
+                    .endObject()
+                    .startObject("properties"))
+                    .endObject()
+                .endObject()
+            .endObject();
+    }
+
+    private static XContentBuilder addCommonProperties(XContentBuilder obj) throws IOException {
+        return addSheduleOnlyProperties(obj
+            .startObject(EsContent.URI)
+                .field("type").value("string")
+                .field("index").value("not_analyzed")
+            .endObject()
+            .startObject(EsContent.TITLE)
+                .field("type").value("string")
+                .field("index").value("analyzed")
+            .endObject()
+            .startObject(EsContent.FLATTENED_TITLE)
+                    .field("type").value("string")
+                    .field("index").value("analyzed")
+            .endObject()
+            .startObject(EsContent.SOURCE)
+                .field("type").value("string")
+                .field("index").value("not_analyzed")
+            .endObject()
+            .startObject(EsContent.SPECIALIZATION)
+                .field("type").value("string")
+                .field("index").value("not_analyzed")
+            .endObject()
+            .startObject(EsContent.TOPICS)
+                .field("type").value("nested")
+                .startObject("properties")
+                    .startObject(EsTopicMapping.TOPIC)
+                        .field("type").value("nested")
+                        .startObject(EsTopicMapping.ID)
+                            .field("type").value("long")
+                        .endObject()
+                    .endObject()
+                .endObject()
+            .endObject()
+            .startObject(EsContent.LOCATIONS)
+                .field("type").value("nested")
+            .endObject());
+    }
+
+    private static XContentBuilder addSheduleOnlyProperties(XContentBuilder obj) throws IOException {
+        return obj.startObject(EsContent.ID)
+                .field("type").value("long")
+                .field("index").value("not_analyzed")
+            .endObject()
+            .startObject(EsContent.BROADCASTS)
+                .field("type").value("nested")
+                .startObject("properties")
+                    .startObject(EsBroadcast.CHANNEL)
+                        .field("type").value("string")
+                        .field("index").value("not_analyzed")
+                    .endObject()
+                .endObject()
+            .endObject();
+    }
 
     public EsContent id(long id) {
         properties.put(ID, id);
@@ -58,7 +156,7 @@ public class EsContent extends EsObject {
     }
     
     public EsContent publisher(String publisher) {
-        properties.put(PUBLISHER, publisher);
+        properties.put(SOURCE, publisher);
         return this;
     }
 
@@ -86,4 +184,5 @@ public class EsContent extends EsObject {
         properties.put(HAS_CHILDREN, hasChildren);
         return this;
     }
+
 }

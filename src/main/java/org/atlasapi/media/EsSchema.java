@@ -2,7 +2,7 @@ package org.atlasapi.media;
 
 public interface EsSchema {
     
-    public final static String CLUSTER_NAME = "Atlas";
-
-    public final static String INDEX_NAME = "atlas";
+    public final static String CONTENT_INDEX = "content";
+    public final static String TOPICS_INDEX  = "topics";
+    
 }

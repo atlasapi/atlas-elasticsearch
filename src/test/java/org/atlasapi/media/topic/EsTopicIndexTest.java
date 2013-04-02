@@ -13,7 +13,6 @@ import static org.junit.Assert.assertThat;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.ConsoleAppender;
@@ -25,10 +24,10 @@ import org.atlasapi.content.criteria.attribute.Attributes;
 import org.atlasapi.content.criteria.operator.Operators;
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.util.ElasticSearchHelper;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -41,9 +40,7 @@ import com.metabroadcast.common.query.Selection;
 
 public class EsTopicIndexTest {
 
-    private final Node esClient = NodeBuilder.nodeBuilder()
-        .local(true).clusterName(UUID.randomUUID().toString())
-        .build().start();
+    private final Node esClient = ElasticSearchHelper.testNode();
     private final String indexName = "topics";
     private final EsTopicIndex index = new EsTopicIndex(esClient, indexName, 60, TimeUnit.SECONDS);
     
@@ -62,8 +59,7 @@ public class EsTopicIndexTest {
     
     @After
     public void after() throws Exception {
-        esClient.client().admin().indices()
-            .delete(Requests.deleteIndexRequest(indexName)).get();
+        ElasticSearchHelper.clearIndices(esClient);
         esClient.close();
     }
     

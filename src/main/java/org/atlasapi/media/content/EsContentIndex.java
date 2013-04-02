@@ -1,8 +1,6 @@
 package org.atlasapi.media.content;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.atlasapi.media.topic.EsTopic.ID;
-import static org.atlasapi.media.topic.EsTopic.SOURCE;
 
 import org.atlasapi.content.criteria.AttributeQuerySet;
 import org.atlasapi.media.common.Id;
@@ -43,10 +41,10 @@ public class EsContentIndex implements ContentIndex {
         SettableFuture<SearchResponse> response = SettableFuture.create();
         esClient.client()  
             .prepareSearch(indexName)
-            .setTypes(EsContent.CHILD_TYPE, EsContent.TOP_LEVEL_TYPE, EsContent.TOP_ITEM_TYPE)
+            .setTypes(EsContent.CHILD_ITEM, EsContent.TOP_LEVEL_CONTAINER, EsContent.TOP_LEVEL_ITEM)
             .setQuery(builder.buildQuery(query))
-            .addField(ID)
-            .setFilter(FiltersBuilder.buildForPublishers(SOURCE, publishers))
+            .addField(EsContent.ID)
+            .setFilter(FiltersBuilder.buildForPublishers(EsContent.SOURCE, publishers))
             .setFrom(selection.getOffset())
             .setSize(Objects.firstNonNull(selection.getLimit(), DEFAULT_LIMIT))
             .execute(FutureSettingActionListener.setting(response));
@@ -62,7 +60,7 @@ public class EsContentIndex implements ContentIndex {
                 return FluentIterable.from(input.getHits()).transform(new Function<SearchHit, Id>() {
                     @Override
                     public Id apply(SearchHit hit) {
-                        Long id = hit.field(ID).<Number>value().longValue();
+                        Long id = hit.field(EsContent.ID).<Number>value().longValue();
                         return Id.valueOf(id);
                     }
                 });

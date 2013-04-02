@@ -4,7 +4,6 @@ import static org.atlasapi.media.util.ElasticSearchHelper.refresh;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
-import java.util.UUID;
 
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
@@ -19,11 +18,10 @@ import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Specialization;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.media.util.ElasticSearchHelper;
 import org.atlasapi.search.model.SearchQuery;
 import org.atlasapi.search.model.SearchResults;
-import org.elasticsearch.client.Requests;
 import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -33,12 +31,11 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.metabroadcast.common.query.Selection;
 import com.metabroadcast.common.time.DateTimeZones;
+import com.metabroadcast.common.time.SystemClock;
 
 public class EsContentSearcherTest {
 
-    private final Node esClient = NodeBuilder.nodeBuilder()
-        .local(true).clusterName(UUID.randomUUID().toString())
-        .build().start();
+    private final Node esClient = ElasticSearchHelper.testNode();
 
     @BeforeClass
     public static void before() throws Exception {
@@ -50,8 +47,7 @@ public class EsContentSearcherTest {
 
     @After
     public void after() throws Exception {
-        esClient.client().admin().indices()
-            .delete(Requests.deleteIndexRequest(EsSchema.INDEX_NAME)).get();
+        ElasticSearchHelper.clearIndices(esClient);
         esClient.close();
     }
     
@@ -98,7 +94,7 @@ public class EsContentSearcherTest {
         item2.setParentRef(ParentRef.parentRefFrom(brand1));
         item3.setParentRef(ParentRef.parentRefFrom(brand2));
 
-        EsContentIndexer contentIndexer = new EsContentIndexer(esClient);
+        EsContentIndexer contentIndexer = new EsContentIndexer(esClient, EsSchema.CONTENT_INDEX, new SystemClock(), 60000);
         contentIndexer.startAndWait();
 
         EsContentSearcher contentSearcher = new EsContentSearcher(esClient);

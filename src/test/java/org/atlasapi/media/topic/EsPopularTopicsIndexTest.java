@@ -7,8 +7,6 @@ import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.UUID;
-
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -22,10 +20,9 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.TopicRef.Relationship;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.media.util.ElasticSearchHelper;
 import org.atlasapi.media.util.Resolved;
-import org.elasticsearch.client.Requests;
 import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
 import org.junit.After;
@@ -42,10 +39,8 @@ import com.metabroadcast.common.time.SystemClock;
 
 public class EsPopularTopicsIndexTest {
 
-    private final Node esClient = NodeBuilder.nodeBuilder()
-        .local(true).clusterName(UUID.randomUUID().toString())
-        .build().start();
-    private final EsContentIndexer indexer = new EsContentIndexer(esClient, new SystemClock(), 60000);
+    private final Node esClient = ElasticSearchHelper.testNode();
+    private final EsContentIndexer indexer = new EsContentIndexer(esClient, EsSchema.CONTENT_INDEX, new SystemClock(), 60000);
 
     @BeforeClass
     public static void before() throws Exception {
@@ -62,8 +57,7 @@ public class EsPopularTopicsIndexTest {
     
     @After
     public void after() throws Exception {
-        esClient.client().admin().indices()
-            .delete(Requests.deleteIndexRequest(EsSchema.INDEX_NAME)).get();
+        ElasticSearchHelper.clearIndices(esClient);
         esClient.close();
     }
 

@@ -11,7 +11,6 @@ import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.log4j.ConsoleAppender;
@@ -28,12 +27,11 @@ import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Specialization;
 import org.atlasapi.media.entity.testing.ComplexBroadcastTestDataBuilder;
+import org.atlasapi.media.util.ElasticSearchHelper;
 import org.atlasapi.search.model.SearchQuery;
 import org.atlasapi.search.model.SearchResults;
 import org.elasticsearch.action.count.CountRequestBuilder;
-import org.elasticsearch.client.Requests;
 import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.junit.After;
@@ -51,10 +49,8 @@ import com.metabroadcast.common.time.SystemClock;
 
 public class EsContentSearcherV3CompatibilityTest {
     
-    private final Node esClient = NodeBuilder.nodeBuilder()
-        .local(true).clusterName(UUID.randomUUID().toString())
-        .build().start();
-    private final EsContentIndexer indexer = new EsContentIndexer(esClient, new SystemClock());
+    private final Node esClient = ElasticSearchHelper.testNode();
+    private final EsContentIndexer indexer = new EsContentIndexer(esClient, EsSchema.CONTENT_INDEX, new SystemClock(), 60000);
     private final EsContentSearcher searcher = new EsContentSearcher(esClient);
     
     @BeforeClass
@@ -90,14 +86,13 @@ public class EsContentSearcherV3CompatibilityTest {
 
     private long count() throws InterruptedException, ExecutionException {
         return new CountRequestBuilder(esClient.client())
-            .setIndices(EsSchema.INDEX_NAME)
+            .setIndices(EsSchema.CONTENT_INDEX)
             .execute().get().getCount();
     }
 
     @After
     public void after() throws Exception {
-        esClient.client().admin().indices()
-            .delete(Requests.deleteIndexRequest(EsSchema.INDEX_NAME)).get();
+        ElasticSearchHelper.clearIndices(esClient);
         esClient.close();
     }
 

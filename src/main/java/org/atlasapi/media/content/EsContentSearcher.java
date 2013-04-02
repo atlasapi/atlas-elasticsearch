@@ -62,7 +62,7 @@ public class EsContentSearcher implements ContentSearcher {
 
         List<TermsFilterBuilder> filters = new LinkedList<TermsFilterBuilder>();
         if (search.getIncludedPublishers() != null && !search.getIncludedPublishers().isEmpty()) {
-            filters.add(FiltersBuilder.buildForPublishers(EsContent.PUBLISHER, search.getIncludedPublishers()));
+            filters.add(FiltersBuilder.buildForPublishers(EsContent.SOURCE, search.getIncludedPublishers()));
         }
         if (search.getIncludedSpecializations() != null
             && !search.getIncludedSpecializations().isEmpty()) {
@@ -96,18 +96,18 @@ public class EsContentSearcher implements ContentSearcher {
             .should(
                 filteredQuery(contentQuery,
                     andFilter(
-                        typeFilter(EsContent.TOP_LEVEL_TYPE),
+                        typeFilter(EsContent.TOP_LEVEL_ITEM),
                         termFilter(EsContent.HAS_CHILDREN, Boolean.FALSE)
                     )
                 )
             )
             .should(
-                topChildrenQuery(EsContent.CHILD_TYPE, contentQuery)
+                topChildrenQuery(EsContent.CHILD_ITEM, contentQuery)
                     .score("sum")
             );
 
         final SettableFuture<SearchResults> result = SettableFuture.create();
-        index.prepareSearch(EsSchema.INDEX_NAME)
+        index.prepareSearch(EsSchema.CONTENT_INDEX)
             .setQuery(finalQuery)
             .addField(EsContent.ID)
             .addSort(SortBuilders.scoreSort().order(SortOrder.DESC))

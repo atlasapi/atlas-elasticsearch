@@ -14,11 +14,9 @@ import org.elasticsearch.node.NodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.Service.State;
-import com.google.common.util.concurrent.ServiceManager;
 import com.metabroadcast.common.time.SystemClock;
 
 public class ElasticSearchContentIndexModule {
@@ -32,17 +30,17 @@ public class ElasticSearchContentIndexModule {
     private final EsPopularTopicIndex popularTopicsIndex;
     private final EsContentSearcher contentSearcher;
 
-    public ElasticSearchContentIndexModule(String seeds, long requestTimeout) {
-        Node index = NodeBuilder.nodeBuilder().client(true).
-                clusterName(EsSchema.CLUSTER_NAME).
+    public ElasticSearchContentIndexModule(String seeds, String clusterName, long requestTimeout) {
+        Node client = NodeBuilder.nodeBuilder().client(true).
+                clusterName(clusterName).
                 settings(ImmutableSettings.settingsBuilder().put("discovery.zen.ping.unicast.hosts", seeds)).
                 build().start();
-        this.contentIndexer = new EsContentIndexer(index, new SystemClock(), requestTimeout);
-        this.contentIndex = new EsContentIndex(index, EsSchema.INDEX_NAME);
-        this.scheduleIndex = new EsScheduleIndex(index, new SystemClock());
-        this.popularTopicsIndex = new EsPopularTopicIndex(index);
-        this.topicIndex = new EsTopicIndex(index, "topics", 60, TimeUnit.SECONDS);
-        this.contentSearcher = new EsContentSearcher(index);
+        this.contentIndexer = new EsContentIndexer(client, EsSchema.CONTENT_INDEX, new SystemClock(), requestTimeout);
+        this.contentIndex = new EsContentIndex(client, EsSchema.CONTENT_INDEX);
+        this.scheduleIndex = new EsScheduleIndex(client, new SystemClock());
+        this.popularTopicsIndex = new EsPopularTopicIndex(client);
+        this.topicIndex = new EsTopicIndex(client, EsSchema.TOPICS_INDEX, 60, TimeUnit.SECONDS);
+        this.contentSearcher = new EsContentSearcher(client);
     }
 
     public void init() {

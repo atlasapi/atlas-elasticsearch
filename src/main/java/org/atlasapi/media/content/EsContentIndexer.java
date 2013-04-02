@@ -1,6 +1,7 @@
 package org.atlasapi.media.content;
 
-import static org.atlasapi.media.EsSchema.INDEX_NAME;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.atlasapi.media.EsSchema.CONTENT_INDEX;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -22,11 +23,11 @@ import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.media.util.EsPersistenceException;
 import org.atlasapi.media.util.Strings;
-import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.NoShardAvailableActionException;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
+import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -34,7 +35,6 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.Requests;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.node.Node;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -49,7 +49,6 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.metabroadcast.common.time.Clock;
 import com.metabroadcast.common.time.DateTimeZones;
-import com.metabroadcast.common.time.SystemClock;
 
 /**
  */
@@ -62,26 +61,20 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
     private final long requestTimeout;
     
     private Set<String> existingIndexes;
+
+    private String index;
     
-    public EsContentIndexer(Node esClient) {
-        this(esClient, new SystemClock());
-    }
-
-    public EsContentIndexer(Node esClient, Clock clock) {
-        this(esClient, clock, 60000);
-    }
-
-    public EsContentIndexer(Node esClient, Clock clock, long requestTimeout) {
-        this.esClient = esClient;
+    public EsContentIndexer(Node esClient, String index, Clock clock, long requestTimeout) {
+        this.esClient = checkNotNull(esClient);
         this.scheduleNames = new EsScheduleIndexNames(esClient, clock);
         this.requestTimeout = requestTimeout;
+        this.index = checkNotNull(index);
     }
 
     @Override
     protected void startUp() throws IOException {
-        if (createIndex(INDEX_NAME)) {
-            putTopContentMapping(INDEX_NAME);
-            putChildContentMapping();
+        if (createIndex(index)) {
+            putTypeMappings();
         }
         this.existingIndexes = Sets.newHashSet(scheduleNames.existingIndexNames());
         log.info("Found existing indices {}", existingIndexes);
@@ -91,7 +84,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
     protected void shutDown() throws Exception {
         
     }
-
+    
     private boolean createIndex(String name) {
         ActionFuture<IndicesExistsResponse> exists = esClient.client().admin().indices().exists(
             Requests.indicesExistsRequest(name)
@@ -105,141 +98,24 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
             return false;
         }
     }
-
-    private void putTopContentMapping(String index) throws IOException, ElasticSearchException {
-        log.info("Putting mapping for index {}", index);
-        ActionFuture<PutMappingResponse> putMapping = esClient
-            .client()
-            .admin()
-            .indices()
-            .putMapping(Requests.putMappingRequest(index)
-                .type(EsContent.TOP_LEVEL_TYPE)
-                .source(XContentFactory.jsonBuilder()
-                    .startObject()
-                        .startObject(EsContent.TOP_LEVEL_TYPE)
-                            .startObject("_all")
-                                .field("enabled").value(false)
-                            .endObject()
-                            .startObject("properties")
-                                .startObject(EsContent.URI)
-                                    .field("type").value("string")
-                                    .field("index").value("not_analyzed")
-                                .endObject()
-                                .startObject(EsContent.ID)
-                                    .field("type").value("long")
-                                    .field("index").value("not_analyzed")
-                                .endObject()
-                                .startObject(EsContent.TITLE)
-                                    .field("type").value("string")
-                                    .field("index").value("analyzed")
-                                .endObject()
-                                .startObject(EsContent.FLATTENED_TITLE)
-                                    .field("type").value("string")
-                                    .field("index").value("analyzed")
-                                .endObject()
-                                .startObject(EsContent.PUBLISHER)
-                                    .field("type").value("string")
-                                    .field("index").value("not_analyzed")
-                                .endObject()
-                                .startObject(EsContent.SPECIALIZATION)
-                                    .field("type").value("string")
-                                    .field("index").value("not_analyzed")
-                                .endObject()
-                                .startObject(EsContent.BROADCASTS)
-                                    .field("type").value("nested")
-                                    .startObject("properties")
-                                        .startObject(EsBroadcast.CHANNEL)
-                                            .field("type").value("string")
-                                            .field("index").value("not_analyzed")
-                                        .endObject()
-                                    .endObject()
-                                .endObject()
-                                .startObject(EsContent.TOPICS)
-                                    .field("type").value("nested")
-                                    .startObject("properties")
-                                        .startObject(EsTopicMapping.ID)
-                                            .field("type").value("long")
-                                        .endObject()
-                                    .endObject()
-                                .endObject()
-                                .startObject(EsContent.LOCATIONS)
-                                    .field("type").value("nested")
-                                .endObject()
-                            .endObject()
-                        .endObject()
-                    .endObject()
-                )
-            );
-        putMapping.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+    
+    private void putTypeMappings() throws IOException {
+        log.info("Putting mapping for type {}", EsContent.TOP_LEVEL_CONTAINER);
+        doMappingRequest(Requests.putMappingRequest(index)
+            .type(EsContent.TOP_LEVEL_CONTAINER)
+            .source(EsContent.getTopLevelMapping(EsContent.TOP_LEVEL_CONTAINER)));
+        log.info("Putting mapping for type {}", EsContent.TOP_LEVEL_ITEM);
+        doMappingRequest(Requests.putMappingRequest(index)
+            .type(EsContent.TOP_LEVEL_ITEM)
+            .source(EsContent.getTopLevelMapping(EsContent.TOP_LEVEL_ITEM)));
+        log.info("Putting mapping for type {}", EsContent.CHILD_ITEM);
+        doMappingRequest(Requests.putMappingRequest(index)
+                .type(EsContent.CHILD_ITEM)
+                .source(EsContent.getChildMapping()));
     }
 
-    private void putChildContentMapping() throws ElasticSearchException, IOException {
-        ActionFuture<PutMappingResponse> putMapping = esClient
-            .client()
-            .admin()
-            .indices()
-            .putMapping(Requests.putMappingRequest(INDEX_NAME)
-                .type(EsContent.CHILD_TYPE)
-                .source(XContentFactory.jsonBuilder()
-                    .startObject()
-                        .startObject(EsContent.CHILD_TYPE)
-                            .startObject("_parent")
-                                .field("type").value(EsContent.TOP_LEVEL_TYPE)
-                            .endObject()
-                            .startObject("_all")
-                                .field("enabled").value(false)
-                            .endObject()
-                            .startObject("properties")
-                                .startObject(EsContent.URI)
-                                    .field("type").value("string")
-                                    .field("index").value("not_analyzed")
-                                .endObject()
-                                .startObject(EsContent.ID)
-                                    .field("type").value("long")
-                                    .field("index").value("not_analyzed")
-                                .endObject()
-                                .startObject(EsContent.TITLE)
-                                    .field("type").value("string")
-                                    .field("index").value("analyzed")
-                                .endObject()
-                                .startObject(EsContent.FLATTENED_TITLE)
-                                        .field("type").value("string")
-                                        .field("index").value("analyzed")
-                                .endObject()
-                                .startObject(EsContent.PUBLISHER)
-                                    .field("type").value("string")
-                                    .field("index").value("not_analyzed")
-                                .endObject()
-                                .startObject(EsContent.SPECIALIZATION)
-                                    .field("type").value("string")
-                                    .field("index").value("not_analyzed")
-                                .endObject()
-                                .startObject(EsContent.BROADCASTS)
-                                    .field("type").value("nested")
-                                    .startObject("properties")
-                                        .startObject(EsBroadcast.CHANNEL)
-                                            .field("type").value("string")
-                                            .field("index").value("not_analyzed")
-                                        .endObject()
-                                    .endObject()
-                                .endObject()
-                                .startObject(EsContent.TOPICS)
-                                    .field("type").value("nested")
-                                    .startObject("properties")
-                                        .startObject(EsTopicMapping.ID)
-                                            .field("type").value("long")
-                                        .endObject()
-                                    .endObject()
-                                .endObject()
-                                .startObject(EsContent.LOCATIONS)
-                                    .field("type").value("nested")
-                                .endObject()
-                            .endObject()
-                        .endObject()
-                    .endObject()
-                )
-            );
-        putMapping.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+    private PutMappingResponse doMappingRequest(PutMappingRequest req) {
+        return timeoutGet(esClient.client().admin().indices().putMapping(req));
     }
     
     @Override
@@ -275,14 +151,14 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
             ParentRef container = item.getContainer();
             if (container != null) {
                 fillParentData(esContent, container);
-                mainIndexRequest = Requests.indexRequest(INDEX_NAME)
-                    .type(EsContent.CHILD_TYPE)
+                mainIndexRequest = Requests.indexRequest(CONTENT_INDEX)
+                    .type(EsContent.CHILD_ITEM)
                     .id(getDocId(item))
                     .source(esContent.toMap())
                     .parent(getDocId(container));
             } else {
-                mainIndexRequest = Requests.indexRequest(INDEX_NAME)
-                    .type(EsContent.TOP_LEVEL_TYPE)
+                mainIndexRequest = Requests.indexRequest(CONTENT_INDEX)
+                    .type(EsContent.TOP_LEVEL_ITEM)
                     .id(getDocId(item))
                     .source(esContent.hasChildren(false).toMap());
             }
@@ -319,7 +195,9 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
         Set<String> missingIndices = Sets.difference(scheduleRequests.keySet(), existingIndexes);
         for (String missingIndex : missingIndices) {
             if (createIndex(missingIndex)) {
-                putTopContentMapping(missingIndex);
+                doMappingRequest(Requests.putMappingRequest(missingIndex)
+                        .type(EsContent.TOP_LEVEL_ITEM)
+                        .source(EsContent.getScheduleMapping()));
                 existingIndexes.add(missingIndex);
             }
         }
@@ -345,7 +223,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
             requests.put(
                 indexBroadcasts.getKey(), 
                 Requests.indexRequest(indexBroadcasts.getKey())
-                    .type(EsContent.TOP_LEVEL_TYPE)
+                    .type(EsContent.TOP_LEVEL_ITEM)
                     .id(getDocId(item))
                     .source(new EsContent()
                         .id(item.getId().longValue())
@@ -378,8 +256,8 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
         } else {
             indexed.hasChildren(Boolean.FALSE);
         }
-        IndexRequest request = Requests.indexRequest(INDEX_NAME)
-            .type(EsContent.TOP_LEVEL_TYPE)
+        IndexRequest request = Requests.indexRequest(CONTENT_INDEX)
+            .type(EsContent.TOP_LEVEL_CONTAINER)
             .id(getDocId(container))
             .source(indexed.toMap());
         timeoutGet(esClient.client().index(request));
@@ -442,7 +320,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
     private Collection<EsTopicMapping> makeESTopics(Item item) {
         Collection<EsTopicMapping> esTopics = new LinkedList<EsTopicMapping>();
         for (TopicRef topic : item.getTopicRefs()) {
-            esTopics.add(new EsTopicMapping().id(topic.getTopic().longValue()));
+            esTopics.add(new EsTopicMapping().topicId(topic.getTopic().longValue()));
         }
         return esTopics;
     }
@@ -465,8 +343,8 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
                 if (parent.getTitle() != null) {
                     indexedChild.put(EsContent.PARENT_TITLE, parent.getTitle());
                     indexedChild.put(EsContent.PARENT_FLATTENED_TITLE, Strings.flatten(parent.getTitle()));
-                    bulk.add(Requests.indexRequest(INDEX_NAME).
-                            type(EsContent.CHILD_TYPE).
+                    bulk.add(Requests.indexRequest(CONTENT_INDEX).
+                            type(EsContent.CHILD_ITEM).
                             parent(getDocId(parent)).
                             id(getDocId(child)).
                             source(indexedChild));
@@ -494,7 +372,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
     }
 
     private Map<String, Object> trySearchParent(ParentRef parent) {
-        GetRequest request = Requests.getRequest(INDEX_NAME).id(getDocId(parent));
+        GetRequest request = Requests.getRequest(CONTENT_INDEX).id(getDocId(parent));
         GetResponse response = timeoutGet(esClient.client().get(request));
         if (response.isExists()) {
             return response.getSource();
@@ -505,7 +383,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
 
     private Map<String, Object> trySearchChild(Container parent, ChildRef child) {
         try {
-            GetRequest request = Requests.getRequest(INDEX_NAME)
+            GetRequest request = Requests.getRequest(CONTENT_INDEX)
                     .parent(getDocId(parent))
                     .id(getDocId(child));
             GetResponse response = timeoutGet(esClient.client().get(request));

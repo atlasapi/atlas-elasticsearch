@@ -6,7 +6,6 @@ import static org.atlasapi.media.util.ElasticSearchHelper.refresh;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -14,6 +13,7 @@ import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+import org.atlasapi.media.EsSchema;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.EsContentIndexer;
@@ -24,11 +24,11 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.media.util.ElasticSearchHelper;
 import org.elasticsearch.action.admin.indices.status.IndicesStatusRequest;
 import org.elasticsearch.action.admin.indices.status.IndicesStatusResponse;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
 import org.junit.After;
@@ -48,12 +48,10 @@ import com.metabroadcast.common.time.TimeMachine;
 @RunWith(MockitoJUnitRunner.class)
 public class EsScheduleIndexTest {
 
-    private final Node esClient = NodeBuilder.nodeBuilder()
-        .local(true).clusterName(UUID.randomUUID().toString())
-        .build().start();
+    private final Node esClient = ElasticSearchHelper.testNode();
     private final Clock clock = new TimeMachine(new DateTime(2012,11,19,10,10,10,10,DateTimeZones.UTC));
     private final EsScheduleIndex scheduleIndex = new EsScheduleIndex(esClient, clock);
-    private final EsContentIndexer contentIndexer = new EsContentIndexer(esClient);
+    private final EsContentIndexer contentIndexer = new EsContentIndexer(esClient, EsSchema.CONTENT_INDEX, clock, 60000);
 
     private final Channel channel1 = new Channel(Publisher.METABROADCAST,"MB1","MB1",MediaType.VIDEO, "http://www.bbc.co.uk/services/bbcone");
     private final Channel channel2 = new Channel(Publisher.METABROADCAST,"MB1","MB1",MediaType.VIDEO, "http://www.bbc.co.uk/services/bbctwo");

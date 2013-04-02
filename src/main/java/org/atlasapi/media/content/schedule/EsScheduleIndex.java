@@ -5,9 +5,7 @@ import static org.atlasapi.media.content.EsBroadcast.ID;
 import static org.atlasapi.media.content.EsBroadcast.TRANSMISSION_END_TIME;
 import static org.atlasapi.media.content.EsBroadcast.TRANSMISSION_TIME;
 import static org.atlasapi.media.content.EsContent.BROADCASTS;
-import static org.atlasapi.media.content.EsContent.CHILD_TYPE;
-import static org.atlasapi.media.content.EsContent.PUBLISHER;
-import static org.atlasapi.media.content.EsContent.TOP_LEVEL_TYPE;
+import static org.atlasapi.media.content.EsContent.SOURCE;
 import static org.elasticsearch.index.query.FilterBuilders.andFilter;
 import static org.elasticsearch.index.query.FilterBuilders.nestedFilter;
 import static org.elasticsearch.index.query.FilterBuilders.rangeFilter;
@@ -27,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.content.EsContent;
 import org.atlasapi.media.content.schedule.ScheduleRef.ScheduleRefEntry;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.util.FutureSettingActionListener;
@@ -111,7 +110,7 @@ public class EsScheduleIndex implements ScheduleIndex {
         }
         esClient.client()
             .prepareSearch(queryIndices)
-            .setTypes(TOP_LEVEL_TYPE, CHILD_TYPE)
+            .setTypes(EsContent.TOP_LEVEL_ITEM)
             .setSearchType(SearchType.DEFAULT)
             .setQuery(scheduleQueryFor(pub, broadcastOn, scheduleInterval))
             .addFields(FIELDS)
@@ -144,7 +143,7 @@ public class EsScheduleIndex implements ScheduleIndex {
 
         return filteredQuery(
             boolQuery()
-                .must(termQuery(PUBLISHER, publisher))
+                .must(termQuery(SOURCE, publisher))
                 .must(nestedQuery(BROADCASTS,
                     boolQuery()
                         .must(termQuery(CHANNEL, broadcastOn))
