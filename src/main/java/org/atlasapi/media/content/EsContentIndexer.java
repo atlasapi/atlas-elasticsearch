@@ -320,7 +320,10 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
     private Collection<EsTopicMapping> makeESTopics(Item item) {
         Collection<EsTopicMapping> esTopics = new LinkedList<EsTopicMapping>();
         for (TopicRef topic : item.getTopicRefs()) {
-            esTopics.add(new EsTopicMapping().topicId(topic.getTopic().longValue()));
+            esTopics.add(new EsTopicMapping()
+                .topicId(topic.getTopic().longValue())
+                .supervised(topic.isSupervised())
+                .weighting(topic.getWeighting()));
         }
         return esTopics;
     }
