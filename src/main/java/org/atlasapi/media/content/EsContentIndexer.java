@@ -323,7 +323,8 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
             esTopics.add(new EsTopicMapping()
                 .topicId(topic.getTopic().longValue())
                 .supervised(topic.isSupervised())
-                .weighting(topic.getWeighting()));
+                .weighting(topic.getWeighting())
+                .relationship(topic.getRelationship()));
         }
         return esTopics;
     }
