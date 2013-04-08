@@ -21,7 +21,6 @@ import org.atlasapi.media.content.schedule.ScheduleRef.ScheduleRefEntry;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.media.util.ElasticSearchHelper;
@@ -53,8 +52,8 @@ public class EsScheduleIndexTest {
     private final EsScheduleIndex scheduleIndex = new EsScheduleIndex(esClient, clock);
     private final EsContentIndexer contentIndexer = new EsContentIndexer(esClient, EsSchema.CONTENT_INDEX, clock, 60000);
 
-    private final Channel channel1 = new Channel(Publisher.METABROADCAST,"MB1","MB1",MediaType.VIDEO, "http://www.bbc.co.uk/services/bbcone");
-    private final Channel channel2 = new Channel(Publisher.METABROADCAST,"MB1","MB1",MediaType.VIDEO, "http://www.bbc.co.uk/services/bbctwo");
+    private final Channel channel1 = Channel.builder().withUri("http://www.bbc.co.uk/services/bbcone").build();
+    private final Channel channel2 = Channel.builder().withUri("http://www.bbc.co.uk/services/bbctwo").build();
     
     @BeforeClass
     public static void before() throws Exception {

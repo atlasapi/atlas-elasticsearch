@@ -23,6 +23,7 @@ import org.atlasapi.content.criteria.AttributeQuerySet;
 import org.atlasapi.content.criteria.attribute.Attributes;
 import org.atlasapi.content.criteria.operator.Operators;
 import org.atlasapi.media.common.Id;
+import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.util.ElasticSearchHelper;
 import org.elasticsearch.action.get.GetResponse;
@@ -65,7 +66,7 @@ public class EsTopicIndexTest {
     
     @Test
     public void testIndexesAndRetrievesTopic() throws Exception {
-        Topic topic = topic(1234, Publisher.DBPEDIA, "title", "description", "an:Alias");
+        Topic topic = topic(1234, Publisher.DBPEDIA, "title", "description", new Alias("an", "Alias"));
         
         index.index(topic);
         
@@ -83,12 +84,12 @@ public class EsTopicIndexTest {
         
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> aliases = (List<Map<String, Object>>) source.get(ALIASES);
-        assertEquals("an:Alias", Iterables.getOnlyElement(aliases).get(VALUE));
+        assertEquals("Alias", Iterables.getOnlyElement(aliases).get(VALUE));
     }
 
     @Test
     public void testIdOnlyQuery() throws Exception {
-        Topic topic = topic(1234, Publisher.DBPEDIA, "title", "description", "an:Alias");
+        Topic topic = topic(1234, Publisher.DBPEDIA, "title", "description", new Alias("an", "Alias"));
         
         index.index(topic);
         refresh(esClient);
@@ -102,14 +103,14 @@ public class EsTopicIndexTest {
 
     @Test
     public void testConjunctiveQuery() throws Exception {
-        Topic topic = topic(1234, Publisher.DBPEDIA, "title", "description", "an:Alias");
+        Topic topic = topic(1234, Publisher.DBPEDIA, "title", "description", new Alias("an", "Alias"));
         
         index.index(topic);
         refresh(esClient);
         
         AttributeQuerySet query = new AttributeQuerySet(ImmutableList.of(
             Attributes.ID.createQuery(Operators.EQUALS, ImmutableList.of(topic.getId())),
-            Attributes.ALIASES_VALUE.createQuery(Operators.EQUALS, ImmutableList.of("an:Alias"))
+            Attributes.ALIASES_VALUE.createQuery(Operators.EQUALS, ImmutableList.of("Alias"))
         ));
         Iterable<Id> ids = Futures.getUnchecked(index.query(query, ImmutableList.of(Publisher.DBPEDIA), Selection.ALL));
         assertThat(Iterables.getOnlyElement(ids),is(topic.getId()));
@@ -117,7 +118,7 @@ public class EsTopicIndexTest {
 
     @Test
     public void testPublisherFilter() throws Exception {
-        Topic topic = topic(1234, Publisher.METABROADCAST, "title", "description", "an:Alias");
+        Topic topic = topic(1234, Publisher.METABROADCAST, "title", "description", new Alias("an", "Alias"));
         
         index.index(topic);
         refresh(esClient);
@@ -131,15 +132,15 @@ public class EsTopicIndexTest {
 
     @Test
     public void testSelection() throws Exception {
-        Topic topic1 = topic(1234, Publisher.DBPEDIA, "title1", "description1", "an:Alias");
-        Topic topic2 = topic(1235, Publisher.DBPEDIA, "title2", "description2", "an:Alias");
+        Topic topic1 = topic(1234, Publisher.DBPEDIA, "title1", "description1", new Alias("an", "Alias"));
+        Topic topic2 = topic(1235, Publisher.DBPEDIA, "title2", "description2", new Alias("an", "Alias"));
         
         index.index(topic2);
         index.index(topic1);
         refresh(esClient);
         
         AttributeQuerySet query = new AttributeQuerySet(ImmutableList.of(
-            Attributes.ALIASES_VALUE.createQuery(Operators.EQUALS, ImmutableList.of("an:Alias"))
+            Attributes.ALIASES_VALUE.createQuery(Operators.EQUALS, ImmutableList.of("Alias"))
         ));
         Iterable<Id> ids = Futures.getUnchecked(index.query(query, ImmutableList.of(Publisher.DBPEDIA), 
             Selection.ALL));
@@ -158,7 +159,7 @@ public class EsTopicIndexTest {
         assertThat(Iterables.getOnlyElement(ids), is(topic2.getId()));
     }
 
-    private Topic topic(int id, Publisher source, String title, String description, String... aliases) {
+    private Topic topic(int id, Publisher source, String title, String description, Alias... aliases) {
         Topic topic = new Topic();
         topic.setId(id);
         topic.setPublisher(source);

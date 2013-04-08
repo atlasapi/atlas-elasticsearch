@@ -366,7 +366,15 @@ public class EsContentSearcherV3CompatibilityTest {
     }
     
     protected static SearchQuery specializedTitle(String term, Specialization specialization) {
-        return new SearchQuery(term, Selection.ALL, Sets.newHashSet(specialization), Publisher.all(), 1.0f, 0.0f, 0.0f);
+        return SearchQuery.builder(term)
+                .withSelection(Selection.offsetBy(0))
+                .withSpecializations(Sets.newHashSet(specialization))
+                .withPublishers(ImmutableSet.<Publisher>of())
+                .withTitleWeighting(1)
+                .withBroadcastWeighting(0)
+                .withCatchupWeighting(0)
+                .withPriorityChannelWeighting(0)
+                .build();
     }
 
     protected static SearchQuery currentWeighted(String term) {

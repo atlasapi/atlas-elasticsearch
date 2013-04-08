@@ -108,11 +108,18 @@ public class EsContentSearcherTest {
 
         refresh(esClient);
 
-        ListenableFuture<SearchResults> future = contentSearcher.search(new SearchQuery("title",
-                Selection.offsetBy(0),
-                ImmutableSet.<Specialization>of(),
-                ImmutableSet.<Publisher>of(),
-                1, 0f, 0f));
+        SearchQuery query = SearchQuery.builder("title")
+            .withSelection(Selection.offsetBy(0))
+            .withSpecializations(ImmutableSet.<Specialization>of())
+            .withPublishers(ImmutableSet.<Publisher>of())
+            .withTitleWeighting(1)
+            .withBroadcastWeighting(0)
+            .withCatchupWeighting(0)
+            .withPriorityChannelWeighting(0)
+            .build();
+            
+        ListenableFuture<SearchResults> future = contentSearcher.search(query);
+        
         SearchResults results = future.get();
         assertEquals(2, results.getIds().size());
         assertEquals(brand1.getId(), results.getIds().get(0));
