@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.atlasapi.media.content.schedule.EsScheduleIndexNames;
@@ -23,6 +24,7 @@ import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.media.util.EsPersistenceException;
 import org.atlasapi.media.util.Strings;
+import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.NoShardAvailableActionException;
@@ -35,6 +37,8 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.Requests;
+import org.elasticsearch.index.mapper.MergeMappingException;
+import org.elasticsearch.indices.IndexAlreadyExistsException;
 import org.elasticsearch.node.Node;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -90,8 +94,13 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
             Requests.indicesExistsRequest(name)
         );
         if (!timeoutGet(exists).isExists()) {
-            log.info("Creating index {}", name);
-            timeoutGet(esClient.client().admin().indices().create(Requests.createIndexRequest(name)));
+            try {
+                log.info("Creating index {}", name);
+                timeoutGet(esClient.client().admin().indices().create(Requests.createIndexRequest(name)));
+            } catch (IndexAlreadyExistsException iaee) {
+                log.info("Already exists: {}", name);
+                return false;
+            }
             return true;
         } else {
             log.info("Index {} exists", name);
@@ -114,8 +123,13 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
                 .source(EsContent.getChildMapping()));
     }
 
-    private PutMappingResponse doMappingRequest(PutMappingRequest req) {
-        return timeoutGet(esClient.client().admin().indices().putMapping(req));
+    private void doMappingRequest(PutMappingRequest req) {
+        try {
+            timeoutGet(esClient.client().admin().indices().putMapping(req));
+        } catch (MergeMappingException mme) {
+            log.info("Merge Mapping Exception: {}/{}", req.indices(), req.type());
+        }
+        
     }
     
     @Override
@@ -402,7 +416,13 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
     }
     
     private <T> T timeoutGet(ActionFuture<T> future) {
-        return future.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+        try {
+            return future.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+        } catch (ElasticSearchException ese) {
+            Throwable root = Throwables.getRootCause(ese);
+            Throwables.propagateIfInstanceOf(root, ElasticSearchException.class);
+            throw Throwables.propagate(ese);
+        }
     }
 
 }
