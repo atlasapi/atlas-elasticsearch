@@ -262,8 +262,8 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
             .parentTitle(container.getTitle())
             .parentFlattenedTitle(flattenedOrNull(container.getTitle()))
             .publisher(container.getPublisher() != null ? container.getPublisher().key() : null)
-            .specialization(container.getSpecialization() != null ? container.getSpecialization().name() : null);
-        
+            .specialization(container.getSpecialization() != null ? container.getSpecialization().name() : null)
+            .topics(makeESTopics(container));
         if (!container.getChildRefs().isEmpty()) {
             indexed.hasChildren(Boolean.TRUE);
             indexChildrenData(container);
@@ -331,9 +331,9 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
             .availabilityEndTime(toUtc(policy.getAvailabilityEnd()).toDate());
     }
 
-    private Collection<EsTopicMapping> makeESTopics(Item item) {
+    private Collection<EsTopicMapping> makeESTopics(Content content) {
         Collection<EsTopicMapping> esTopics = new LinkedList<EsTopicMapping>();
-        for (TopicRef topic : item.getTopicRefs()) {
+        for (TopicRef topic : content.getTopicRefs()) {
             esTopics.add(new EsTopicMapping()
                 .topicId(topic.getTopic().longValue())
                 .supervised(topic.isSupervised())
