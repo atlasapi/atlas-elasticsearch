@@ -77,4 +77,43 @@ public class EsContentIndexTest {
         assertThat(ids.first().get(), is(Id.valueOf(1)));
     }
 
+    @Test
+    public void testTopicWeightingQuery() throws Exception {
+        Content content = new Episode();
+        content.setId(1);
+        content.setPublisher(Publisher.METABROADCAST);
+        content.setTopicRefs(ImmutableList.of(new TopicRef(2L, 1.0f, true, Relationship.ABOUT)));
+        
+        indexer.index(content);
+        ElasticSearchHelper.refresh(esClient);
+        
+        AttributeQuery<Float> query = Attributes.TOPIC_WEIGHTING.createQuery(
+                Operators.EQUALS, ImmutableList.of(1.0f));
+        
+        FluentIterable<Id> ids = index.query(
+                new AttributeQuerySet(ImmutableList.of(query)), 
+                ImmutableList.of(Publisher.METABROADCAST), Selection.all())
+            .get(1, TimeUnit.SECONDS);
+        assertThat(ids.first().get(), is(Id.valueOf(1)));
+        
+        query = Attributes.TOPIC_WEIGHTING.createQuery(
+                Operators.LESS_THAN, ImmutableList.of(0.5f));
+
+        ids = index.query(
+                new AttributeQuerySet(ImmutableList.of(query)), 
+                ImmutableList.of(Publisher.METABROADCAST), Selection.all())
+                .get(1, TimeUnit.SECONDS);
+        assertThat(ids.first().isPresent(), is(false));
+
+        query = Attributes.TOPIC_WEIGHTING.createQuery(
+                Operators.GREATER_THAN, ImmutableList.of(0.5f));
+        
+        ids = index.query(
+                new AttributeQuerySet(ImmutableList.of(query)), 
+                ImmutableList.of(Publisher.METABROADCAST), Selection.all())
+                .get(1, TimeUnit.SECONDS);
+        assertThat(ids.first().get(), is(Id.valueOf(1)));
+        
+    }
+    
 }

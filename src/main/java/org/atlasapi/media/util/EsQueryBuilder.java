@@ -8,6 +8,7 @@ import org.atlasapi.content.criteria.AttributeQuery;
 import org.atlasapi.content.criteria.BooleanAttributeQuery;
 import org.atlasapi.content.criteria.DateTimeAttributeQuery;
 import org.atlasapi.content.criteria.EnumAttributeQuery;
+import org.atlasapi.content.criteria.FloatAttributeQuery;
 import org.atlasapi.content.criteria.IdAttributeQuery;
 import org.atlasapi.content.criteria.IntegerAttributeQuery;
 import org.atlasapi.content.criteria.MatchesNothing;
@@ -207,6 +208,33 @@ public class EsQueryBuilder {
             public QueryBuilder visit(IdAttributeQuery query) {
                 final String name = query.getAttributeName();
                 final List<Long> value = Lists.transform(query.getValue(), Id.toLongValue());
+                return query.accept(new IntegerOperatorVisitor<QueryBuilder>() {
+
+                    @Override
+                    public QueryBuilder visit(Equals equals) {
+                        Object[] values = value.toArray(new Object[value.size()]);
+                        return QueryBuilders.termsQuery(name, values);
+                    }
+
+                    @Override
+                    public QueryBuilder visit(LessThan lessThan) {
+                        return QueryBuilders.rangeQuery(name)
+                            .lt(Ordering.natural().max(value));
+                    }
+
+                    @Override
+                    public QueryBuilder visit(GreaterThan greaterThan) {
+                        return QueryBuilders.rangeQuery(name)
+                            .gt(Ordering.natural().min(value));
+                    }
+                });
+                
+            }
+
+            @Override
+            public QueryBuilder visit(FloatAttributeQuery query) {
+                final String name = query.getAttributeName();
+                final List<Float> value = query.getValue();
                 return query.accept(new IntegerOperatorVisitor<QueryBuilder>() {
 
                     @Override
