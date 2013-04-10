@@ -63,9 +63,8 @@ public class EsContentIndexTest {
         Content content = new Episode();
         content.setId(1);
         content.setPublisher(Publisher.METABROADCAST);
-        indexer.index(content);
-        
-        ElasticSearchHelper.refresh(esClient);
+
+        indexAndRefresh(content);
         
         AttributeQuery<Publisher> query = Attributes.SOURCE
             .createQuery(Operators.EQUALS, ImmutableList.of(Publisher.METABROADCAST));
@@ -93,9 +92,8 @@ public class EsContentIndexTest {
         content.setId(1);
         content.setPublisher(Publisher.METABROADCAST);
         content.setTopicRefs(ImmutableList.of(new TopicRef(2L, 1.0f, true, Relationship.ABOUT)));
-        indexer.index(content);
         
-        ElasticSearchHelper.refresh(esClient);
+        indexAndRefresh(content);
         
         AttributeQuery<Id> query = Attributes.TOPIC_ID.createQuery(Operators.EQUALS, ImmutableList.of(Id.valueOf(2)));
         
@@ -105,6 +103,35 @@ public class EsContentIndexTest {
         FluentIterable<Id> ids = result.get(1, TimeUnit.SECONDS);
         assertThat(ids.first().get(), is(Id.valueOf(1)));
     }
+    
+    @Test
+    public void testQueryOrder() throws Exception {
+        Content episode1 = episode(1);
+        episode1.setTopicRefs(ImmutableList.of(new TopicRef(4L, 1.0f, true, Relationship.ABOUT)));
+        Content episode2 = episode(2);
+        episode2.setTopicRefs(ImmutableList.of(new TopicRef(4L, 1.5f, true, Relationship.ABOUT)));
+        Content episode3 = episode(3);
+        episode3.setTopicRefs(ImmutableList.of(new TopicRef(4L, 2.0f, false, Relationship.ABOUT)));
+        
+        indexAndRefresh(episode1, episode2, episode3);
+        
+        AttributeQuery<Id> query = Attributes.TOPIC_ID.createQuery(Operators.EQUALS, ImmutableList.of(Id.valueOf(4)));
+        
+        AttributeQuerySet querySet = new AttributeQuerySet(ImmutableList.of(query));
+        ListenableFuture<FluentIterable<Id>> result = index.query(querySet, ImmutableList.of(Publisher.METABROADCAST), Selection.all());
+        
+        FluentIterable<Id> ids = result.get(1, TimeUnit.SECONDS);
+        assertThat(ids.get(0), is(Id.valueOf(2)));
+        assertThat(ids.get(1), is(Id.valueOf(1)));
+        assertThat(ids.get(2), is(Id.valueOf(3)));
+    }
+
+    private Content episode(int id) {
+        Content content = new Episode();
+        content.setId(id);
+        content.setPublisher(Publisher.METABROADCAST);
+        return content;
+    }
 
     @Test
     public void testTopicWeightingQuery() throws Exception {
@@ -112,9 +139,8 @@ public class EsContentIndexTest {
         content.setId(1);
         content.setPublisher(Publisher.METABROADCAST);
         content.setTopicRefs(ImmutableList.of(new TopicRef(2L, 1.0f, true, Relationship.ABOUT)));
-        
-        indexer.index(content);
-        ElasticSearchHelper.refresh(esClient);
+
+        indexAndRefresh(content);
         
         AttributeQuery<Float> query = Attributes.TOPIC_WEIGHTING.createQuery(
                 Operators.EQUALS, ImmutableList.of(1.0f));
@@ -145,4 +171,10 @@ public class EsContentIndexTest {
         
     }
     
+    private void indexAndRefresh(Content...contents) throws IndexException {
+        for (Content content : contents) {
+            indexer.index(content);
+        }
+        ElasticSearchHelper.refresh(esClient);
+    }
 }

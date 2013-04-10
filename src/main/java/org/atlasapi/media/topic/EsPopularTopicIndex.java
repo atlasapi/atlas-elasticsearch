@@ -51,7 +51,7 @@ public class EsPopularTopicIndex implements PopularTopicIndex {
                     .transform(new Function<Entry, Id>() {
                         @Override
                         public Id apply(Entry input) {
-                            return Id.valueOf(input.getTerm());
+                            return Id.valueOf(input.getTerm().string());
                         }
                     });
             }

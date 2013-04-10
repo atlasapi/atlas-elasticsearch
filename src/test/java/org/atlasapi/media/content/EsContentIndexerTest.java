@@ -160,9 +160,9 @@ public final class EsContentIndexerTest {
         List<? extends Entry> terms = facets.facet(TermsFacet.class, "topicFacet").getEntries();
 
         assertEquals(2, terms.size());
-        assertEquals("1", terms.get(0).getTerm());
+        assertEquals("1", terms.get(0).getTerm().string());
         assertEquals(2, terms.get(0).getCount());
-        assertEquals("2", terms.get(1).getTerm());
+        assertEquals("2", terms.get(1).getTerm().string());
         assertEquals(1, terms.get(1).getCount());
     }
 }

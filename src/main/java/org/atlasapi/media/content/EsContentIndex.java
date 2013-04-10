@@ -11,6 +11,9 @@ import org.atlasapi.media.util.FutureSettingActionListener;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.sort.SortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
@@ -44,6 +47,8 @@ public class EsContentIndex implements ContentIndex {
             .setTypes(EsContent.CHILD_ITEM, EsContent.TOP_LEVEL_CONTAINER, EsContent.TOP_LEVEL_ITEM)
             .setQuery(builder.buildQuery(query))
             .addField(EsContent.ID)
+            .addSort(SortBuilders.fieldSort(EsContent.TOPICS+"."+EsTopicMapping.SUPERVISED).order(SortOrder.DESC))
+            .addSort(SortBuilders.fieldSort(EsContent.TOPICS+"."+EsTopicMapping.WEIGHTING).order(SortOrder.DESC))
             .setFilter(FiltersBuilder.buildForPublishers(EsContent.SOURCE, publishers))
             .setFrom(selection.getOffset())
             .setSize(Objects.firstNonNull(selection.getLimit(), DEFAULT_LIMIT))

@@ -9,6 +9,7 @@ import java.util.List;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 
 /**
@@ -20,9 +21,11 @@ public class Strings {
         try {
             TokenStream tokens;
             if (filterStopWords) {
-                tokens = new StandardAnalyzer(Version.LUCENE_30).tokenStream("", new StringReader(value));
+                tokens = new StandardAnalyzer(Version.LUCENE_40)
+                    .tokenStream("", new StringReader(value));
             } else {
-                tokens = new StandardAnalyzer(Version.LUCENE_30, ImmutableSet.of()).tokenStream("", new StringReader(value));
+                tokens = new StandardAnalyzer(Version.LUCENE_40, CharArraySet.EMPTY_SET)
+                    .tokenStream("", new StringReader(value));
             }
             while (tokens.incrementToken()) {
                 CharTermAttribute token = tokens.getAttribute(CharTermAttribute.class);
