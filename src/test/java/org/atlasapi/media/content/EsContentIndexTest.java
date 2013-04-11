@@ -59,6 +59,35 @@ public class EsContentIndexTest {
     }
     
     @Test
+    public void testSourceQuery() throws Exception {
+        Content content = new Episode();
+        content.setId(1);
+        content.setPublisher(Publisher.METABROADCAST);
+        indexer.index(content);
+        
+        ElasticSearchHelper.refresh(esClient);
+        
+        AttributeQuery<Publisher> query = Attributes.SOURCE
+            .createQuery(Operators.EQUALS, ImmutableList.of(Publisher.METABROADCAST));
+        
+        AttributeQuerySet querySet = new AttributeQuerySet(ImmutableList.of(query));
+        ListenableFuture<FluentIterable<Id>> result = index.query(querySet, ImmutableList.of(Publisher.METABROADCAST), Selection.all());
+        
+        FluentIterable<Id> ids = result.get(1, TimeUnit.SECONDS);
+        assertThat(ids.first().get(), is(Id.valueOf(1)));
+
+        query = Attributes.SOURCE
+            .createQuery(Operators.EQUALS, ImmutableList.of(Publisher.BBC));
+        
+        querySet = new AttributeQuerySet(ImmutableList.of(query));
+        result = index.query(querySet, ImmutableList.of(Publisher.METABROADCAST), Selection.all());
+        
+        ids = result.get(1, TimeUnit.SECONDS);
+        assertThat(ids.isEmpty(), is(true));
+        
+    }
+        
+    @Test
     public void testTopicQuery() throws Exception {
         Content content = new Episode();
         content.setId(1);

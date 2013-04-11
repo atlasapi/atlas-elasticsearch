@@ -38,6 +38,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
@@ -154,7 +155,7 @@ public class EsQueryBuilder {
             @Override
             public QueryBuilder visit(EnumAttributeQuery<?> query) {
                 final String name = query.getAttributeName();
-                final List<?> values = query.getValue();
+                final List<?> values = Lists.transform(query.getValue(), Functions.toStringFunction());
                 return query.accept(new EnumOperatorVisitor<QueryBuilder>() {
 
                     @Override
