@@ -9,7 +9,6 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.atlasapi.media.content.schedule.EsScheduleIndexNames;
@@ -30,7 +29,6 @@ import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.NoShardAvailableActionException;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.get.GetRequest;
@@ -134,29 +132,33 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
     
     @Override
     public void index(Content content) throws IndexException {
-        content.accept(new ContentVisitorAdapter<Void>() {
-            @Override
-            protected Void visitItem(Item item) {
-                try {
+        try {
+            content.accept(new ContentVisitorAdapter<Void>() {
+                @Override
+                protected Void visitItem(Item item) {
                     indexItem(item);
-                } catch (IndexException e) {
-                    throw Throwables.propagate(e);
+                    return null;
                 }
-                return null;
-            }
-            @Override
-            protected Void visitContainer(Container container) {
-                try {
+                @Override
+                protected Void visitContainer(Container container) {
                     indexContainer(container);
-                } catch (IndexException e) {
-                    throw Throwables.propagate(e);
+                    return null;
                 }
-                return null;
-            }
-        });
+            });
+        } catch (RuntimeIndexException rie) {
+            throw new IndexException(rie.getMessage(), rie.getCause());
+        }
     };
+    
+    private class RuntimeIndexException extends RuntimeException {
 
-    private void indexItem(Item item) throws IndexException {
+        public RuntimeIndexException(String message, Throwable cause) {
+            super(message, cause);
+        }
+        
+    }
+
+    private void indexItem(Item item) {
         try {
             EsContent esContent = toEsContent(item);
             
@@ -186,7 +188,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
             BulkResponse resp = timeoutGet(esClient.client().bulk(requests));
             log.info("Indexed {} ({}ms, {})", new Object[]{item, resp.getTookInMillis(), scheduleRequests.keySet()});
         } catch (Exception e) {
-            throw new IndexException("Error indexing " + item, e);
+            throw new RuntimeIndexException("Error indexing " + item, e);
         }
     }
 
@@ -253,7 +255,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
         return requests.build();
     }
 
-    private void indexContainer(Container container) throws IndexException {
+    private void indexContainer(Container container) {
         EsContent indexed = new EsContent()
             .id(container.getId().longValue())
             .uri(container.getCanonicalUri())
