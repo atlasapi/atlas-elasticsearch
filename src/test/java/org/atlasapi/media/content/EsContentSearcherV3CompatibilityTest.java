@@ -47,7 +47,6 @@ import com.metabroadcast.common.query.Selection;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.metabroadcast.common.time.SystemClock;
 
-@Ignore("Fix NPE in Strings.tokenise")
 public class EsContentSearcherV3CompatibilityTest {
     
     private final Node esClient = ElasticSearchHelper.testNode();

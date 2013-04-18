@@ -27,6 +27,7 @@ public class Strings {
                 tokens = new StandardAnalyzer(Version.LUCENE_40, CharArraySet.EMPTY_SET)
                     .tokenStream("", new StringReader(value));
             }
+            tokens.reset();
             while (tokens.incrementToken()) {
                 CharTermAttribute token = tokens.getAttribute(CharTermAttribute.class);
                 tokensAsStrings.add(token.toString());
