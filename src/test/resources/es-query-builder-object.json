@@ -1,5 +1,5 @@
 {
-    "minusone": "-1",
+    "minusone": -1,
     "zero": "one",
     "one": [{
         "first": "one-first-one", 
@@ -11,12 +11,12 @@
         "first": "one-first-three",
         "second": "one-second-three",
         "two": [{
-            "first": "one-two-first-one",
-            "second": "one-two-second-one",
+            "first": 1.0,
+            "second": "INSTANCE",
             "three": [{
-                "first": "one-two-three-first-one", 
-                "second": "one-two-three-second-one",
-                "third": "one-two-three-third-one"
+                "first": true, 
+                "second": "1987-02-02T14:30:00.000Z",
+                "third": 1234
             }]
         }]
     }]

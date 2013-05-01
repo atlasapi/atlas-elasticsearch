@@ -19,10 +19,9 @@ import org.atlasapi.content.criteria.QueryNode.TerminalNode;
 import org.atlasapi.content.criteria.QueryNodeVisitor;
 import org.atlasapi.content.criteria.QueryVisitor;
 import org.atlasapi.content.criteria.StringAttributeQuery;
-import org.atlasapi.content.criteria.operator.BooleanOperatorVisitor;
+import org.atlasapi.content.criteria.operator.EqualsOperatorVisitor;
 import org.atlasapi.content.criteria.operator.DateTimeOperatorVisitor;
-import org.atlasapi.content.criteria.operator.EnumOperatorVisitor;
-import org.atlasapi.content.criteria.operator.IntegerOperatorVisitor;
+import org.atlasapi.content.criteria.operator.ComparableOperatorVisitor;
 import org.atlasapi.content.criteria.operator.Operators.After;
 import org.atlasapi.content.criteria.operator.Operators.Before;
 import org.atlasapi.content.criteria.operator.Operators.Beginning;
@@ -35,6 +34,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
@@ -51,7 +51,7 @@ public class EsQueryBuilder {
         return operands.accept(new QueryNodeVisitor<QueryBuilder>() {
 
             Stack<String> traversed = new Stack<String>();
-            
+
             @Override
             public QueryBuilder visit(IntermediateNode node) {
                 BoolQueryBuilder conjuncts = QueryBuilders.boolQuery();
@@ -59,15 +59,17 @@ public class EsQueryBuilder {
                 for (QueryNode desc : node.getDescendants()) {
                     conjuncts.must(desc.accept(this));
                 }
-                for(int i = 0; i < node.pathSegments().size(); i++) traversed.pop();
-                return node.pathSegments().isEmpty() ? conjuncts 
-                                                     : nest(node, conjuncts);
+                for (int i = 0; i < node.pathSegments().size(); i++) {
+                    traversed.pop();
+                }
+                return node.pathSegments().isEmpty() ? conjuncts
+                                                    : nest(node, conjuncts);
             }
 
             private NestedQueryBuilder nest(IntermediateNode node, BoolQueryBuilder conjuncts) {
                 return QueryBuilders.nestedQuery(
-                    nestPath(node), conjuncts
-                );
+                        nestPath(node), conjuncts
+                        );
             }
 
             private String nestPath(IntermediateNode node) {
@@ -84,7 +86,8 @@ public class EsQueryBuilder {
                 AttributeQuery<?> query = node.getQuery();
                 QueryBuilder builder = queryForTerminal(node);
                 if (node.pathSegments().size() > 1) {
-                    builder = QueryBuilders.nestedQuery(query.getAttribute().getPathPrefix(), builder);
+                    builder = QueryBuilders.nestedQuery(query.getAttribute().getPathPrefix(),
+                            builder);
                 }
                 return builder;
             }
@@ -98,101 +101,41 @@ public class EsQueryBuilder {
             public QueryBuilder visit(final IntegerAttributeQuery query) {
                 final String name = query.getAttributeName();
                 final List<Integer> values = query.getValue();
-                return query.accept(new IntegerOperatorVisitor<QueryBuilder>() {
-
-                    @Override
-                    public QueryBuilder visit(Equals equals) {
-                        Object[] vals = values.toArray(new Object[values.size()]);
-                        return QueryBuilders.termsQuery(name, vals);
-                    }
-
-                    @Override
-                    public QueryBuilder visit(LessThan lessThan) {
-                        return QueryBuilders.rangeQuery(name)
-                            .lt(Ordering.natural().max(values));
-                    }
-
-                    @Override
-                    public QueryBuilder visit(GreaterThan greaterThan) {
-                        return QueryBuilders.rangeQuery(name)
-                            .gt(Ordering.natural().min(values));
-                    }
-                });
+                return query.accept(new EsComparableOperatorVisitor<Integer>(name, values));
             }
 
             @Override
             public QueryBuilder visit(StringAttributeQuery query) {
                 final List<String> values = query.getValue();
                 final String name = query.getAttributeName();
-                return query.accept(new StringOperatorVisitor<QueryBuilder>() {
-
-                    @Override
-                    public QueryBuilder visit(Equals equals) {
-                        Object[] vals = values.toArray(new Object[values.size()]);
-                        return QueryBuilders.termsQuery(name, vals);
-                    }
-
-                    @Override
-                    public QueryBuilder visit(Beginning beginning) {
-                        return QueryBuilders.prefixQuery(name, values.get(0));
-                    }
-                    
-                });
+                return query.accept(new EsStringOperatorVisitor(name, values));
             }
 
             @Override
             public QueryBuilder visit(BooleanAttributeQuery query) {
                 final String name = query.getAttributeName();
-                final boolean value = query.getValue().get(0);
-                return query.accept(new BooleanOperatorVisitor<QueryBuilder>() {
-                    @Override
-                    public QueryBuilder visit(Equals equals) {
-                        return QueryBuilders.termQuery(name, value);
-                    }
-                });
+                final List<Boolean> value = query.getValue().subList(0, 1);
+                return query.accept(new EsEqualsOperatorVisitor<Boolean>(name, value));
             }
 
             @Override
             public QueryBuilder visit(EnumAttributeQuery<?> query) {
                 final String name = query.getAttributeName();
-                final List<?> values = Lists.transform(query.getValue(), Functions.toStringFunction());
-                return query.accept(new EnumOperatorVisitor<QueryBuilder>() {
-
-                    @Override
-                    public QueryBuilder visit(Equals equals) {
-                        Object[] vals = values.toArray(new Object[values.size()]);
-                        return QueryBuilders.termsQuery(name, vals);
-                    }
-                });
+                final List<String> values = Lists.transform(query.getValue(),
+                        Functions.toStringFunction());
+                return query.accept(new EsEqualsOperatorVisitor<String>(name, values));
             }
 
             @Override
             public QueryBuilder visit(DateTimeAttributeQuery query) {
                 final String name = query.getAttributeName();
                 final List<Date> values = toDates(query.getValue());
-                return query.accept(new DateTimeOperatorVisitor<QueryBuilder>() {
-
-                    @Override
-                    public QueryBuilder visit(Before before) {
-                        return QueryBuilders.rangeQuery(name)
-                            .lt(Ordering.natural().max(values));
-                    }
-
-                    @Override
-                    public QueryBuilder visit(After after) {
-                        return QueryBuilders.rangeQuery(name)
-                            .gt(Ordering.natural().min(values));
-                    }
-
-                    @Override
-                    public QueryBuilder visit(Equals equals) {
-                        return QueryBuilders.termsQuery(name, values);
-                    }
-                });
+                return query.accept(new EsComparableOperatorVisitor<Date>(name, values));
             }
 
             private List<Date> toDates(List<DateTime> value) {
                 return Lists.transform(value, new Function<DateTime, Date>() {
+
                     @Override
                     public Date apply(DateTime input) {
                         return input.toDate();
@@ -209,55 +152,88 @@ public class EsQueryBuilder {
             public QueryBuilder visit(IdAttributeQuery query) {
                 final String name = query.getAttributeName();
                 final List<Long> value = Lists.transform(query.getValue(), Id.toLongValue());
-                return query.accept(new IntegerOperatorVisitor<QueryBuilder>() {
+                return query.accept(new EsComparableOperatorVisitor<Long>(name, value));
 
-                    @Override
-                    public QueryBuilder visit(Equals equals) {
-                        Object[] values = value.toArray(new Object[value.size()]);
-                        return QueryBuilders.termsQuery(name, values);
-                    }
-
-                    @Override
-                    public QueryBuilder visit(LessThan lessThan) {
-                        return QueryBuilders.rangeQuery(name)
-                            .lt(Ordering.natural().max(value));
-                    }
-
-                    @Override
-                    public QueryBuilder visit(GreaterThan greaterThan) {
-                        return QueryBuilders.rangeQuery(name)
-                            .gt(Ordering.natural().min(value));
-                    }
-                });
-                
             }
 
             @Override
             public QueryBuilder visit(FloatAttributeQuery query) {
                 final String name = query.getAttributeName();
                 final List<Float> value = query.getValue();
-                return query.accept(new IntegerOperatorVisitor<QueryBuilder>() {
-
-                    @Override
-                    public QueryBuilder visit(Equals equals) {
-                        Object[] values = value.toArray(new Object[value.size()]);
-                        return QueryBuilders.termsQuery(name, values);
-                    }
-
-                    @Override
-                    public QueryBuilder visit(LessThan lessThan) {
-                        return QueryBuilders.rangeQuery(name)
-                            .lt(Ordering.natural().max(value));
-                    }
-
-                    @Override
-                    public QueryBuilder visit(GreaterThan greaterThan) {
-                        return QueryBuilders.rangeQuery(name)
-                            .gt(Ordering.natural().min(value));
-                    }
-                });
+                return query.accept(new EsComparableOperatorVisitor<Float>(name, value));
             }
         });
     }
-    
+
+    private static class EsEqualsOperatorVisitor<T>
+            implements EqualsOperatorVisitor<QueryBuilder> {
+
+        protected List<T> value;
+        protected String name;
+
+        public EsEqualsOperatorVisitor(String name, List<T> value) {
+            this.name = name;
+            this.value = value;
+        }
+
+        @Override
+        public QueryBuilder visit(Equals equals) {
+            Object[] values = value.toArray(new Object[value.size()]);
+            return QueryBuilders.termsQuery(name, values);
+        }
+
+    }
+
+    private static class EsStringOperatorVisitor extends EsEqualsOperatorVisitor<String>
+            implements StringOperatorVisitor<QueryBuilder> {
+
+        public EsStringOperatorVisitor(String name, List<String> value) {
+            super(name, value);
+        }
+
+        @Override
+        public QueryBuilder visit(Beginning beginning) {
+            return QueryBuilders.prefixQuery(name, value.get(0));
+        }
+    }
+
+    private static class EsComparableOperatorVisitor<T extends Comparable<T>> extends EsEqualsOperatorVisitor<T>
+            implements ComparableOperatorVisitor<QueryBuilder>,
+                DateTimeOperatorVisitor<QueryBuilder> {
+
+        public EsComparableOperatorVisitor(String name, List<T> value) {
+            super(name, value);
+        }
+
+        private RangeQueryBuilder rangeLessThan(String name, List<T> value) {
+            return QueryBuilders.rangeQuery(name)
+                    .lt(Ordering.natural().max(value));
+        }
+
+        private RangeQueryBuilder rangeMoreThan(String name, List<T> value) {
+            return QueryBuilders.rangeQuery(name)
+                    .gt(Ordering.natural().min(value));
+        }
+
+        @Override
+        public QueryBuilder visit(LessThan lessThan) {
+            return rangeLessThan(name, value);
+        }
+
+        @Override
+        public QueryBuilder visit(GreaterThan greaterThan) {
+            return rangeMoreThan(name, value);
+        }
+
+        @Override
+        public QueryBuilder visit(Before before) {
+            return rangeLessThan(name, value);
+        }
+
+        @Override
+        public QueryBuilder visit(After after) {
+            return rangeMoreThan(name, value);
+        }
+
+    }
 }

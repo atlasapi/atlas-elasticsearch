@@ -14,10 +14,16 @@ import org.apache.log4j.PatternLayout;
 import org.atlasapi.content.criteria.AttributeQuery;
 import org.atlasapi.content.criteria.AttributeQuerySet;
 import org.atlasapi.content.criteria.attribute.Attribute;
+import org.atlasapi.content.criteria.attribute.BooleanValuedAttribute;
+import org.atlasapi.content.criteria.attribute.DateTimeValuedAttribute;
+import org.atlasapi.content.criteria.attribute.EnumValuedAttribute;
+import org.atlasapi.content.criteria.attribute.FloatValuedAttribute;
+import org.atlasapi.content.criteria.attribute.IdAttribute;
+import org.atlasapi.content.criteria.attribute.IntegerValuedAttribute;
 import org.atlasapi.content.criteria.attribute.StringValuedAttribute;
 import org.atlasapi.content.criteria.operator.Operators;
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Identified;
-import org.atlasapi.media.util.EsQueryBuilder;
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
@@ -28,6 +34,7 @@ import org.elasticsearch.client.Requests;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.elasticsearch.search.SearchHits;
+import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -45,24 +52,28 @@ public class EsQueryBuilderTest {
     private static final String INDEX = "test";
     private static final String TYPE = "test";
     
-    private final Attribute<String> MINUS_ONE = 
-        new StringValuedAttribute("minusone", Identified.class, true);
+    private static enum TestEnum {
+        INSTANCE;
+    }
+    
+    private final Attribute<Integer> MINUS_ONE = 
+        new IntegerValuedAttribute("minusone", Identified.class, true);
     private final Attribute<String> ZERO = 
         new StringValuedAttribute("zero", Identified.class, true);
     private final Attribute<String> ONE_FIRST = 
         new StringValuedAttribute("one.first", Identified.class, true);
     private final Attribute<String> ONE_SECOND = 
         new StringValuedAttribute("one.second", Identified.class, true);
-    private final Attribute<String> ONE_TWO_FIRST = 
-        new StringValuedAttribute("one.two.first", Identified.class, true);
-    private final Attribute<String> ONE_TWO_SECOND = 
-        new StringValuedAttribute("one.two.second", Identified.class, true);
-    private final Attribute<String> ONE_TWO_THREE_FIRST = 
-        new StringValuedAttribute("one.two.three.first", Identified.class, true);
-    private final Attribute<String> ONE_TWO_THREE_SECOND = 
-        new StringValuedAttribute("one.two.three.second", Identified.class, true);
-    private final Attribute<String> ONE_TWO_THREE_THIRD = 
-        new StringValuedAttribute("one.two.three.third", Identified.class, true);
+    private final Attribute<Float> ONE_TWO_FIRST = 
+        new FloatValuedAttribute("one.two.first", Identified.class, true);
+    private final Attribute<TestEnum> ONE_TWO_SECOND = 
+        new EnumValuedAttribute<TestEnum>("one.two.second", TestEnum.class, Identified.class, true);
+    private final Attribute<Boolean> ONE_TWO_THREE_FIRST = 
+        new BooleanValuedAttribute("one.two.three.first", Identified.class, true);
+    private final Attribute<DateTime> ONE_TWO_THREE_SECOND = 
+        new DateTimeValuedAttribute("one.two.three.second", Identified.class);
+    private final Attribute<Id> ONE_TWO_THREE_THIRD = 
+        new IdAttribute("one.two.three.third", Identified.class, true);
 
     private final EsQueryBuilder builder = new EsQueryBuilder();
 
@@ -120,7 +131,7 @@ public class EsQueryBuilderTest {
     public void testTwoTopLevelQuery() throws Exception {
         AttributeQuerySet queries = new AttributeQuerySet(ImmutableList.<AttributeQuery<?>>of(
             createQuery(ZERO, "one"),
-            createQuery(MINUS_ONE, "-1")
+            createQuery(MINUS_ONE, -1)
         ));
         SearchHits hits = queryHits(queries);
         assertThat(Iterables.getOnlyElement(hits).id(), is("one"));
@@ -158,7 +169,7 @@ public class EsQueryBuilderTest {
     @Test
     public void testDoublyNestedQuery() throws Exception {
         AttributeQuerySet queries = new AttributeQuerySet(ImmutableList.<AttributeQuery<?>>of(
-            createQuery(ONE_TWO_FIRST, "one-two-first-one")
+            createQuery(ONE_TWO_FIRST, 1.0f)
         ));
         SearchHits hits = queryHits(queries);
         assertThat(Iterables.getOnlyElement(hits).id(), is("one"));
@@ -167,7 +178,7 @@ public class EsQueryBuilderTest {
     @Test
     public void testTriplyNestedQuery() throws Exception {
         AttributeQuerySet queries = new AttributeQuerySet(ImmutableList.<AttributeQuery<?>>of(
-            createQuery(ONE_TWO_THREE_FIRST, "one-two-three-first-one")
+            createQuery(ONE_TWO_THREE_FIRST, true)
         ));
         SearchHits hits = queryHits(queries);
         assertThat(Iterables.getOnlyElement(hits).id(), is("one"));
@@ -177,7 +188,7 @@ public class EsQueryBuilderTest {
     public void testTriplyNestedWithTopQuery() throws Exception {
         AttributeQuerySet queries = new AttributeQuerySet(ImmutableList.<AttributeQuery<?>>of(
             createQuery(ZERO, "one"),
-            createQuery(ONE_TWO_THREE_FIRST, "one-two-three-first-one")
+            createQuery(ONE_TWO_THREE_FIRST, true)
         ));
         SearchHits hits = queryHits(queries);
         assertThat(Iterables.getOnlyElement(hits).id(), is("one"));
@@ -187,14 +198,14 @@ public class EsQueryBuilderTest {
     public void testAllTheAttributes() throws Exception {
         ImmutableSet<AttributeQuery<?>> attrQueries = ImmutableSet.<AttributeQuery<?>>of(
             createQuery(ZERO, "one"),
-            createQuery(MINUS_ONE, "-1"),
+            createQuery(MINUS_ONE, -1),
             createQuery(ONE_FIRST, "one-first-three"),
             createQuery(ONE_SECOND, "one-second-three"),
-            createQuery(ONE_TWO_FIRST, "one-two-first-one"),
-            createQuery(ONE_TWO_SECOND, "one-two-second-one"),
-            createQuery(ONE_TWO_THREE_FIRST, "one-two-three-first-one"),
-            createQuery(ONE_TWO_THREE_SECOND, "one-two-three-second-one"),
-            createQuery(ONE_TWO_THREE_THIRD, "one-two-three-third-one")
+            createQuery(ONE_TWO_FIRST, 1.0f),
+            createQuery(ONE_TWO_SECOND, TestEnum.INSTANCE),
+            createQuery(ONE_TWO_THREE_FIRST, true),
+            createQuery(ONE_TWO_THREE_SECOND, new DateTime("1987-02-02T14:30:00.000Z")),
+            createQuery(ONE_TWO_THREE_THIRD, Id.valueOf(1234))
         );
         for (Set<AttributeQuery<?>> queries : Iterables.skip(Sets.powerSet(attrQueries),1)) {
             AttributeQuerySet set = new AttributeQuerySet(queries);
@@ -203,7 +214,54 @@ public class EsQueryBuilderTest {
         }
     }
     
-    private AttributeQuery<?> createQuery(Attribute<String> attr, String... vals) {
+    @Test
+    public void testPrefixQuery() throws Exception {
+        AttributeQuerySet queries = new AttributeQuerySet(ImmutableList.<AttributeQuery<?>>of(
+            ZERO.createQuery(Operators.BEGINNING, ImmutableList.of("on"))
+        ));
+        SearchHits hits = queryHits(queries);
+        assertThat(Iterables.getOnlyElement(hits).id(), is("one"));
+    }
+    
+    @Test
+    public void testDateTimeAfterQuery() throws Exception {
+        AttributeQuerySet queries = new AttributeQuerySet(ImmutableList.<AttributeQuery<?>>of(
+            ONE_TWO_THREE_SECOND.createQuery(Operators.AFTER,
+                ImmutableList.of(new DateTime("1986-02-02T14:30:00.000Z")))
+        ));
+        SearchHits hits = queryHits(queries);
+        assertThat(Iterables.getOnlyElement(hits).id(), is("one"));
+    }
+    
+    @Test
+    public void testDateTimeBeforeQuery() throws Exception {
+        AttributeQuerySet queries = new AttributeQuerySet(ImmutableList.<AttributeQuery<?>>of(
+                ONE_TWO_THREE_SECOND.createQuery(Operators.BEFORE,
+                        ImmutableList.of(new DateTime("1988-02-02T14:30:00.000Z")))
+        ));
+        SearchHits hits = queryHits(queries);
+        assertThat(Iterables.getOnlyElement(hits).id(), is("one"));
+    }
+    
+    @Test
+    public void testIntegerGreaterThanQuery() throws Exception {
+        AttributeQuerySet queries = new AttributeQuerySet(ImmutableList.<AttributeQuery<?>>of(
+            MINUS_ONE.createQuery(Operators.GREATER_THAN, ImmutableList.of(-2))
+        ));
+        SearchHits hits = queryHits(queries);
+        assertThat(Iterables.getOnlyElement(hits).id(), is("one"));
+    }
+    
+    @Test
+    public void testIntegerLessThanQuery() throws Exception {
+        AttributeQuerySet queries = new AttributeQuerySet(ImmutableList.<AttributeQuery<?>>of(
+            MINUS_ONE.createQuery(Operators.LESS_THAN, ImmutableList.of(0))
+        ));
+        SearchHits hits = queryHits(queries);
+        assertThat(Iterables.getOnlyElement(hits).id(), is("one"));
+    }
+    
+    private <T> AttributeQuery<?> createQuery(Attribute<T> attr, T... vals) {
         return attr.createQuery(Operators.EQUALS, ImmutableList.copyOf(vals));
     }
     
