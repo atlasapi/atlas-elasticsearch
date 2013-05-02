@@ -24,9 +24,6 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.media.util.ElasticSearchHelper;
-import org.elasticsearch.action.admin.indices.status.IndicesStatusRequest;
-import org.elasticsearch.action.admin.indices.status.IndicesStatusResponse;
-import org.elasticsearch.client.Requests;
 import org.elasticsearch.node.Node;
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
@@ -66,15 +63,12 @@ public class EsScheduleIndexTest {
     @Before
     public void setUp() throws Exception {
         contentIndexer.startAndWait();
+        refresh(esClient);
     }
     
     @After
     public void tearDown() throws Exception {
-        IndicesStatusRequest req = Requests.indicesStatusRequest((String[]) null);
-        IndicesStatusResponse statuses = esClient.client().admin().indices().status(req).actionGet();
-        for (String index : statuses.getIndices().keySet()) {
-            esClient.client().admin().indices().delete(Requests.deleteIndexRequest(index)).actionGet();
-        }
+        ElasticSearchHelper.clearIndices(esClient);
         esClient.close();
     }
     

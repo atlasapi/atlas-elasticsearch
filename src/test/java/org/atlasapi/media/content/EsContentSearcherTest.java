@@ -25,7 +25,6 @@ import org.elasticsearch.node.Node;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
@@ -34,7 +33,6 @@ import com.metabroadcast.common.query.Selection;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.metabroadcast.common.time.SystemClock;
 
-@Ignore("Fix NPE in Strings.tokenise")
 public class EsContentSearcherTest {
 
     private final Node esClient = ElasticSearchHelper.testNode();
