@@ -148,7 +148,7 @@ public class EsContent extends EsObject {
         return this;
     }
     
-    public EsContent publisher(String publisher) {
+    public EsContent source(String publisher) {
         properties.put(SOURCE, publisher);
         return this;
     }
