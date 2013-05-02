@@ -214,9 +214,14 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
                 doMappingRequest(Requests.putMappingRequest(missingIndex)
                         .type(EsContent.TOP_LEVEL_ITEM)
                         .source(EsContent.getScheduleMapping()));
+                refresh(missingIndex);
                 existingIndexes.add(missingIndex);
             }
         }
+    }
+
+    private void refresh(String missingIndex) {
+        timeoutGet(esClient.client().admin().indices().refresh(Requests.refreshRequest(missingIndex)));
     }
 
     private Map<String,ActionRequest<IndexRequest>> scheduleIndexRequests(Item item) {
