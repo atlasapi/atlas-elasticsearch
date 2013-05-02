@@ -16,7 +16,7 @@ public class EsContent extends EsObject {
     public final static String TOP_LEVEL_ITEM = "top_item";
 
     public final static String ID = "id";
-    public final static String URI = "uri";
+    public final static String TYPE = "type";
     public final static String TITLE = "title";
     public final static String FLATTENED_TITLE = "flattenedTitle";
     public final static String PARENT_TITLE = "parentTitle";
@@ -73,7 +73,7 @@ public class EsContent extends EsObject {
 
     private static XContentBuilder addCommonProperties(XContentBuilder obj) throws IOException {
         return addSheduleOnlyProperties(obj
-            .startObject(EsContent.URI)
+            .startObject(EsContent.TYPE)
                 .field("type").value("string")
                 .field("index").value("not_analyzed")
             .endObject()
@@ -123,8 +123,8 @@ public class EsContent extends EsObject {
         return this;
     }
     
-    public EsContent uri(String uri) {
-        properties.put(URI, uri);
+    public EsContent type(Class<? extends Content> type) {
+        properties.put(TYPE, type.getSimpleName().toLowerCase());
         return this;
     }
 

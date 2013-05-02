@@ -195,7 +195,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
     private EsContent toEsContent(Item item) {
         return new EsContent()
             .id(item.getId().longValue())
-            .uri(item.getCanonicalUri())
+            .type(item.getClass())
             .title(item.getTitle())
             .flattenedTitle(flattenedOrNull(item.getTitle()))
             .parentTitle(item.getTitle())
@@ -248,7 +248,6 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
                     .id(getDocId(item))
                     .source(new EsContent()
                         .id(item.getId().longValue())
-                        .uri(item.getCanonicalUri())
                         .publisher(item.getPublisher() != null ? item.getPublisher().key() : null)
                         .broadcasts(indexBroadcasts.getValue())
                         .hasChildren(false)
@@ -263,7 +262,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
     private void indexContainer(Container container) {
         EsContent indexed = new EsContent()
             .id(container.getId().longValue())
-            .uri(container.getCanonicalUri())
+            .type(container.getClass())
             .title(container.getTitle())
             .flattenedTitle(flattenedOrNull(container.getTitle()))
             .parentTitle(container.getTitle())
