@@ -15,13 +15,17 @@ public class EsTopic extends EsObject {
     public static final XContentBuilder getMapping() throws IOException {
         return XContentFactory.jsonBuilder()
             .startObject()
-                .startObject(TYPE)
+                .startObject(TYPE_NAME)
                     .startObject("_all")
                         .field("enabled").value("false")
                     .endObject()
                     .startObject("properties")
                         .startObject(ID)
                             .field("type").value("long")
+                        .endObject()
+                        .startObject(SOURCE)
+                            .field("type").value("string")
+                            .field("index").value("not_analyzed")
                         .endObject()
                         .startObject(SOURCE)
                             .field("type").value("string")
@@ -53,9 +57,10 @@ public class EsTopic extends EsObject {
             .endObject();
     }
 
-    public static final String TYPE = "topic";
+    public static final String TYPE_NAME = "topic";
 
     public static final String ID = "id";
+    public static final String TYPE = "type";
     public static final String SOURCE = "source";
     public static final String ALIASES = "aliases";
     public static final String TITLE = "title";
@@ -66,6 +71,13 @@ public class EsTopic extends EsObject {
         return this;
     }
     
+    public EsTopic type(Topic.Type type) {
+        if (type != null) {
+            properties.put(TYPE, type.key());
+        }
+        return this;
+    }
+
     public EsTopic source(Publisher source) {
         properties.put(SOURCE, source.key());
         return this;

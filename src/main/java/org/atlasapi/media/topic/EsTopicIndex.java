@@ -66,7 +66,7 @@ public class EsTopicIndex extends AbstractIdleService implements TopicIndex {
             log.info("Creating index {}", indexName);
             get(indices.create(Requests.createIndexRequest(indexName)));
             get(indices.putMapping(Requests.putMappingRequest(indexName)
-                .type(EsTopic.TYPE).source(EsTopic.getMapping())
+                .type(EsTopic.TYPE_NAME).source(EsTopic.getMapping())
             ));
         } else {
             log.info("Index {} exists", indexName);
@@ -84,7 +84,7 @@ public class EsTopicIndex extends AbstractIdleService implements TopicIndex {
 
     public void index(Topic topic) {
         IndexRequest request = Requests.indexRequest(indexName)
-            .type(EsTopic.TYPE)
+            .type(EsTopic.TYPE_NAME)
             .id(topic.getId().toString())
             .source(toEsTopic(topic).toMap());
         esClient.client().index(request).actionGet(timeOutDuration, timeOutUnit);
@@ -93,6 +93,7 @@ public class EsTopicIndex extends AbstractIdleService implements TopicIndex {
     private EsObject toEsTopic(Topic topic) {
         return new EsTopic()
             .id(topic.getId().longValue())
+            .type(topic.getType())
             .source(topic.getPublisher())
             .aliases(Iterables.transform(topic.getAliases(), 
                 new Function<Alias, EsAlias>(){
@@ -113,7 +114,7 @@ public class EsTopicIndex extends AbstractIdleService implements TopicIndex {
         SettableFuture<SearchResponse> response = SettableFuture.create();
         esClient.client()  
             .prepareSearch(indexName)
-            .setTypes(EsTopic.TYPE)
+            .setTypes(EsTopic.TYPE_NAME)
             .setQuery(builder.buildQuery(query))
             .addField(ID)
             .setFilter(FiltersBuilder.buildForPublishers(SOURCE, publishers))
