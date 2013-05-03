@@ -3,10 +3,13 @@ package org.atlasapi.media.content;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.atlasapi.media.entity.Alias;
+import org.atlasapi.media.util.EsAlias;
 import org.atlasapi.media.util.EsObject;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 
+import com.google.common.base.Functions;
 import com.google.common.collect.Iterables;
 
 public class EsContent extends EsObject {
@@ -17,11 +20,12 @@ public class EsContent extends EsObject {
 
     public final static String ID = "id";
     public final static String TYPE = "type";
+    public final static String SOURCE = "source";
+    public final static String ALIASES = "aliases";
     public final static String TITLE = "title";
     public final static String FLATTENED_TITLE = "flattenedTitle";
     public final static String PARENT_TITLE = "parentTitle";
     public final static String PARENT_FLATTENED_TITLE = "parentFlattenedTitle";
-    public final static String SOURCE = "source";
     public final static String SPECIALIZATION = "specialization";
     public final static String BROADCASTS = "broadcasts";
     public final static String LOCATIONS = "locations";
@@ -77,6 +81,10 @@ public class EsContent extends EsObject {
                 .field("type").value("string")
                 .field("index").value("not_analyzed")
             .endObject()
+            .startObject(ALIASES)
+                .field("type").value("nested")
+                .rawField("properties", EsAlias.getMapping().bytes())
+            .endObject()
             .startObject(EsContent.TITLE)
                 .field("type").value("string")
                 .field("index").value("analyzed")
@@ -123,8 +131,13 @@ public class EsContent extends EsObject {
         return this;
     }
     
-    public EsContent type(Class<? extends Content> type) {
-        properties.put(TYPE, type.getSimpleName().toLowerCase());
+    public EsContent type(ContentType type) {
+        properties.put(TYPE, type.getKey());
+        return this;
+    }
+    
+    public EsContent aliases(Iterable<Alias> aliases) {
+        properties.put(ALIASES, Iterables.transform(aliases, Functions.compose(TO_MAP, EsAlias.toEsAlias())));
         return this;
     }
 

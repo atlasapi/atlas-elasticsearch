@@ -195,12 +195,13 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
     private EsContent toEsContent(Item item) {
         return new EsContent()
             .id(item.getId().longValue())
-            .type(item.getClass())
+            .type(ContentType.fromContent(item).get())
+            .source(item.getPublisher() != null ? item.getPublisher().key() : null)
+            .aliases(item.getAliases())
             .title(item.getTitle())
             .flattenedTitle(flattenedOrNull(item.getTitle()))
             .parentTitle(item.getTitle())
             .parentFlattenedTitle(flattenedOrNull(item.getTitle()))
-            .source(item.getPublisher() != null ? item.getPublisher().key() : null)
             .specialization(item.getSpecialization() != null ? item.getSpecialization().name() : null)
             .broadcasts(makeESBroadcasts(item))
             .locations(makeESLocations(item))
@@ -262,12 +263,13 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
     private void indexContainer(Container container) {
         EsContent indexed = new EsContent()
             .id(container.getId().longValue())
-            .type(container.getClass())
+            .type(ContentType.fromContent(container).get())
+            .source(container.getPublisher() != null ? container.getPublisher().key() : null)
+            .aliases(container.getAliases())
             .title(container.getTitle())
             .flattenedTitle(flattenedOrNull(container.getTitle()))
             .parentTitle(container.getTitle())
             .parentFlattenedTitle(flattenedOrNull(container.getTitle()))
-            .source(container.getPublisher() != null ? container.getPublisher().key() : null)
             .specialization(container.getSpecialization() != null ? container.getSpecialization().name() : null)
             .topics(makeESTopics(container));
         if (!container.getChildRefs().isEmpty()) {

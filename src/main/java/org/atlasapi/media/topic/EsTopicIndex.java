@@ -8,9 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.atlasapi.content.criteria.AttributeQuerySet;
 import org.atlasapi.media.common.Id;
-import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.media.util.EsAlias;
 import org.atlasapi.media.util.EsObject;
 import org.atlasapi.media.util.EsQueryBuilder;
 import org.atlasapi.media.util.FiltersBuilder;
@@ -29,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.FluentIterable;
-import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -95,15 +92,7 @@ public class EsTopicIndex extends AbstractIdleService implements TopicIndex {
             .id(topic.getId().longValue())
             .type(topic.getType())
             .source(topic.getPublisher())
-            .aliases(Iterables.transform(topic.getAliases(), 
-                new Function<Alias, EsAlias>(){
-                    @Override
-                    public EsAlias apply(Alias input) {
-                        return new EsAlias().namespace(input.getNamespace())
-                                .value(input.getValue());
-                    }
-                }
-            ))
+            .aliases(topic.getAliases())
             .title(topic.getTitle())
             .description(topic.getDescription());
     }

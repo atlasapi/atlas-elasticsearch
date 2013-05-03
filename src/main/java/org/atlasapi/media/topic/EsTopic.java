@@ -2,12 +2,14 @@ package org.atlasapi.media.topic;
 
 import java.io.IOException;
 
+import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.util.EsAlias;
 import org.atlasapi.media.util.EsObject;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 
+import com.google.common.base.Functions;
 import com.google.common.collect.Iterables;
 
 public class EsTopic extends EsObject {
@@ -41,16 +43,7 @@ public class EsTopic extends EsObject {
                         .endObject()
                         .startObject(ALIASES)
                             .field("type").value("nested")
-                            .startObject("properties")
-                                .startObject(EsAlias.NAMESPACE)
-                                    .field("type").value("string")
-                                    .field("index").value("not_analyzed")
-                                .endObject()
-                                .startObject(EsAlias.VALUE)
-                                    .field("type").value("string")
-                                    .field("index").value("not_analyzed")
-                                .endObject()
-                            .endObject()
+                            .rawField("properties", EsAlias.getMapping().bytes())
                         .endObject()
                     .endObject()
                 .endObject()
@@ -83,8 +76,8 @@ public class EsTopic extends EsObject {
         return this;
     }
     
-    public EsTopic aliases(Iterable<EsAlias> aliases) {
-        properties.put(ALIASES, Iterables.transform(aliases, TO_MAP));
+    public EsTopic aliases(Iterable<Alias> aliases) {
+        properties.put(ALIASES, Iterables.transform(aliases, Functions.compose(TO_MAP, EsAlias.toEsAlias())));
         return this;
     }
     
